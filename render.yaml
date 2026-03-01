@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: tennis-book-app
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: REMINDER_MINUTES_BEFORE
+        value: 180
+      - key: APP_TIMEZONE
+        value: Asia/Dubai
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: ADMIN_WHATSAPP_TO
+        sync: false

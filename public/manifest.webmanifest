@@ -1,0 +1,19 @@
+{
+  "name": "Tennis Book App",
+  "short_name": "TennisBook",
+  "description": "Tennis lesson booking for students, payments, and reminders.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f5a43",
+  "theme_color": "#0f5a43",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,723 @@
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { URL } = require('url');
+
+const PORT = process.env.PORT || 3000;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const REMINDER_MINUTES_BEFORE = Number(process.env.REMINDER_MINUTES_BEFORE || 180);
+const APP_TIMEZONE = process.env.APP_TIMEZONE || 'Asia/Dubai';
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM || '';
+const ADMIN_WHATSAPP_TO = process.env.ADMIN_WHATSAPP_TO || '';
+const DATA_FILE = path.join(__dirname, 'data', 'db.json');
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const sessions = new Map();
+let reminderLoopBusy = false;
+
+function readDb() {
+  const raw = fs.readFileSync(DATA_FILE, 'utf8');
+  const db = JSON.parse(raw);
+
+  if (!Array.isArray(db.services)) db.services = [];
+  if (!Array.isArray(db.students)) db.students = [];
+  if (!Array.isArray(db.slots)) db.slots = [];
+  if (!Array.isArray(db.bookings)) db.bookings = [];
+  if (!Array.isArray(db.payments)) db.payments = [];
+
+  return db;
+}
+
+function writeDb(db) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2), 'utf8');
+}
+
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(payload));
+}
+
+function sendJsonWithHeaders(res, statusCode, payload, headers) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json', ...headers });
+  res.end(JSON.stringify(payload));
+}
+
+function sendFile(res, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const typeMap = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.webmanifest': 'application/manifest+json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.ico': 'image/x-icon'
+  };
+
+  const contentType = typeMap[ext] || 'application/octet-stream';
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+      return;
+    }
+
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(content);
+  });
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 1e6) {
+        req.destroy();
+        reject(new Error('Body too large'));
+      }
+    });
+
+    req.on('end', () => {
+      if (!body) {
+        resolve({});
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(body));
+      } catch (err) {
+        reject(new Error('Invalid JSON body'));
+      }
+    });
+
+    req.on('error', reject);
+  });
+}
+
+function parseCookies(req) {
+  const raw = req.headers.cookie || '';
+  const parsed = {};
+
+  for (const segment of raw.split(';')) {
+    const [key, ...rest] = segment.trim().split('=');
+    if (!key || rest.length === 0) {
+      continue;
+    }
+    parsed[key] = decodeURIComponent(rest.join('='));
+  }
+
+  return parsed;
+}
+
+function getSession(req) {
+  const cookies = parseCookies(req);
+  const sessionId = cookies.session;
+  if (!sessionId) {
+    return null;
+  }
+
+  const session = sessions.get(sessionId);
+  if (!session) {
+    return null;
+  }
+
+  if (session.expiresAt < Date.now()) {
+    sessions.delete(sessionId);
+    return null;
+  }
+
+  return session;
+}
+
+function createSession(role) {
+  const id = crypto.randomBytes(24).toString('hex');
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  const session = { id, role, expiresAt };
+  sessions.set(id, session);
+  return session;
+}
+
+function clearSession(req) {
+  const cookies = parseCookies(req);
+  if (cookies.session) {
+    sessions.delete(cookies.session);
+  }
+}
+
+function requireAdmin(req, res) {
+  const session = getSession(req);
+  if (!session || session.role !== 'admin') {
+    sendJson(res, 401, { error: 'Admin authentication required' });
+    return null;
+  }
+
+  return session;
+}
+
+function nextId(items) {
+  return items.length === 0 ? 1 : Math.max(...items.map((item) => item.id)) + 1;
+}
+
+function calculateStudentSummary(db, studentId) {
+  const totalLessonsPurchased = db.payments
+    .filter((item) => item.studentId === studentId)
+    .reduce((sum, item) => sum + Number(item.lessonsPurchased || 0), 0);
+
+  const totalPaid = db.payments
+    .filter((item) => item.studentId === studentId)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const totalLessonsBooked = db.bookings.filter((item) => item.studentId === studentId).length;
+  const lessonsRemaining = totalLessonsPurchased - totalLessonsBooked;
+
+  return {
+    totalLessonsPurchased,
+    totalLessonsBooked,
+    lessonsRemaining,
+    totalPaid: Number(totalPaid.toFixed(2))
+  };
+}
+
+function validateBooking(payload) {
+  const required = ['studentId', 'serviceId', 'slotId'];
+  const missing = required.filter((field) => !payload[field]);
+  if (missing.length > 0) {
+    return `Missing fields: ${missing.join(', ')}`;
+  }
+
+  return null;
+}
+
+function isValidContactNo(value) {
+  return /^[0-9+()\-\s]{7,20}$/.test(value);
+}
+
+function isWhatsAppEnabled() {
+  return Boolean(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_WHATSAPP_FROM && ADMIN_WHATSAPP_TO);
+}
+
+function normalizeWhatsAppTarget(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+  return raw.startsWith('whatsapp:') ? raw : `whatsapp:${raw}`;
+}
+
+function formatLessonDate(isoDatetime) {
+  return new Intl.DateTimeFormat('en-AE', {
+    timeZone: APP_TIMEZONE,
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(isoDatetime));
+}
+
+async function sendWhatsAppMessage(to, body) {
+  if (!isWhatsAppEnabled()) {
+    return false;
+  }
+
+  const endpoint = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+  const form = new URLSearchParams({
+    To: normalizeWhatsAppTarget(to),
+    From: normalizeWhatsAppTarget(TWILIO_WHATSAPP_FROM),
+    Body: body
+  });
+
+  const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: form.toString()
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Twilio error ${response.status}: ${details}`);
+  }
+
+  return true;
+}
+
+function bookingAlertMessage(student, service, slot, bookingId) {
+  return [
+    'New tennis booking confirmed.',
+    `Booking ID: ${bookingId}`,
+    `Student: ${student.name} (${student.ageGroup})`,
+    `Contact: ${student.contactNo || 'N/A'}`,
+    `Lesson: ${service.name}`,
+    `Start: ${formatLessonDate(slot.start)} (${APP_TIMEZONE})`
+  ].join('\n');
+}
+
+function bookingReminderMessage(student, service, slot, bookingId) {
+  return [
+    'Reminder: tennis lesson is coming up.',
+    `Booking ID: ${bookingId}`,
+    `Student: ${student.name} (${student.ageGroup})`,
+    `Contact: ${student.contactNo || 'N/A'}`,
+    `Lesson: ${service.name}`,
+    `Start: ${formatLessonDate(slot.start)} (${APP_TIMEZONE})`
+  ].join('\n');
+}
+
+async function processDueReminders() {
+  if (!isWhatsAppEnabled() || reminderLoopBusy) {
+    return;
+  }
+
+  reminderLoopBusy = true;
+  try {
+    const db = readDb();
+    const now = Date.now();
+    let updated = false;
+
+    for (const booking of db.bookings) {
+      if (booking.reminderSent || !booking.reminderAt) {
+        continue;
+      }
+
+      const reminderAtMs = Date.parse(booking.reminderAt);
+      if (Number.isNaN(reminderAtMs) || reminderAtMs > now) {
+        continue;
+      }
+
+      const student = db.students.find((item) => item.id === booking.studentId);
+      const service = db.services.find((item) => item.id === booking.serviceId);
+      const slot = db.slots.find((item) => item.id === booking.slotId);
+
+      if (!student || !service || !slot) {
+        booking.reminderSent = true;
+        booking.reminderSentAt = new Date().toISOString();
+        updated = true;
+        continue;
+      }
+
+      try {
+        await sendWhatsAppMessage(
+          ADMIN_WHATSAPP_TO,
+          bookingReminderMessage(student, service, slot, booking.id)
+        );
+        booking.reminderSent = true;
+        booking.reminderSentAt = new Date().toISOString();
+        updated = true;
+      } catch (err) {
+        console.error(`Failed to send reminder for booking ${booking.id}:`, err.message);
+      }
+    }
+
+    if (updated) {
+      writeDb(db);
+    }
+  } finally {
+    reminderLoopBusy = false;
+  }
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
+  if (req.method === 'GET' && url.pathname === '/healthz') {
+    return sendJson(res, 200, { ok: true, service: 'tennis-book-app' });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/auth/me') {
+    const session = getSession(req);
+    if (!session) {
+      return sendJson(res, 200, { authenticated: false, role: null });
+    }
+    return sendJson(res, 200, { authenticated: true, role: session.role });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/auth/login') {
+    try {
+      const payload = await readBody(req);
+      const role = String(payload.role || '').trim().toLowerCase();
+      if (role !== 'admin') {
+        return sendJson(res, 400, { error: 'Unsupported role' });
+      }
+
+      if (payload.password !== ADMIN_PASSWORD) {
+        return sendJson(res, 401, { error: 'Invalid credentials' });
+      }
+
+      const session = createSession(role);
+      return sendJsonWithHeaders(
+        res,
+        200,
+        { ok: true, role },
+        {
+          'Set-Cookie': `session=${session.id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(
+            SESSION_TTL_MS / 1000
+          )}`
+        }
+      );
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/auth/logout') {
+    clearSession(req);
+    return sendJsonWithHeaders(
+      res,
+      200,
+      { ok: true },
+      { 'Set-Cookie': 'session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' }
+    );
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/services') {
+    const db = readDb();
+    return sendJson(res, 200, db.services);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/students') {
+    const db = readDb();
+    return sendJson(res, 200, db.students);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/slots') {
+    const db = readDb();
+    const serviceId = Number(url.searchParams.get('serviceId'));
+    const includeAll = url.searchParams.get('includeAll') === 'true';
+
+    let slots = Number.isNaN(serviceId) ? db.slots : db.slots.filter((slot) => slot.serviceId === serviceId);
+
+    if (includeAll) {
+      if (!requireAdmin(req, res)) {
+        return;
+      }
+      return sendJson(res, 200, slots);
+    }
+
+    return sendJson(res, 200, slots.filter((slot) => slot.available));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/bookings') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const detailedBookings = db.bookings.map((booking) => {
+      const student = db.students.find((item) => item.id === booking.studentId);
+      const service = db.services.find((item) => item.id === booking.serviceId);
+      const slot = db.slots.find((item) => item.id === booking.slotId);
+      return {
+        ...booking,
+        studentName: student ? student.name : 'Unknown student',
+        studentContactNo: student ? student.contactNo || '' : '',
+        serviceName: service ? service.name : 'Unknown lesson',
+        studentAgeGroup: student ? student.ageGroup : 'unknown',
+        slotStart: slot ? slot.start : null,
+        slotEnd: slot ? slot.end : null
+      };
+    });
+    return sendJson(res, 200, detailedBookings);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/payments') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const detailedPayments = db.payments.map((payment) => {
+      const student = db.students.find((item) => item.id === payment.studentId);
+      return {
+        ...payment,
+        studentName: student ? student.name : 'Unknown student'
+      };
+    });
+
+    return sendJson(res, 200, detailedPayments);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/student-summaries') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const summaries = db.students.map((student) => ({
+      ...student,
+      ...calculateStudentSummary(db, student.id)
+    }));
+
+    return sendJson(res, 200, summaries);
+  }
+
+  const summaryMatch = req.method === 'GET' ? url.pathname.match(/^\/api\/students\/(\d+)\/summary$/) : null;
+  if (summaryMatch) {
+    const db = readDb();
+    const studentId = Number(summaryMatch[1]);
+    const student = db.students.find((item) => item.id === studentId);
+    if (!student) {
+      return sendJson(res, 404, { error: 'Student not found' });
+    }
+
+    return sendJson(res, 200, {
+      student,
+      ...calculateStudentSummary(db, studentId)
+    });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/bookings') {
+    try {
+      const payload = await readBody(req);
+      const validationError = validateBooking(payload);
+      if (validationError) {
+        return sendJson(res, 400, { error: validationError });
+      }
+
+      const db = readDb();
+      const studentId = Number(payload.studentId);
+      const serviceId = Number(payload.serviceId);
+      const slotId = Number(payload.slotId);
+
+      const student = db.students.find((item) => item.id === studentId);
+      if (!student) {
+        return sendJson(res, 404, { error: 'Student not found' });
+      }
+
+      const service = db.services.find((item) => item.id === serviceId);
+      if (!service) {
+        return sendJson(res, 404, { error: 'Lesson type not found' });
+      }
+
+      const slot = db.slots.find((item) => item.id === slotId && item.serviceId === serviceId);
+      if (!slot) {
+        return sendJson(res, 404, { error: 'Slot not found for this lesson type' });
+      }
+
+      if (!slot.available) {
+        return sendJson(res, 409, { error: 'Slot already booked' });
+      }
+
+      const summary = calculateStudentSummary(db, studentId);
+      if (summary.lessonsRemaining <= 0) {
+        return sendJson(res, 409, { error: 'Student has no remaining paid lessons' });
+      }
+
+      const booking = {
+        id: nextId(db.bookings),
+        studentId,
+        serviceId,
+        slotId,
+        notes: payload.notes ? String(payload.notes).trim() : '',
+        createdAt: new Date().toISOString(),
+        reminderAt: new Date(new Date(slot.start).getTime() - REMINDER_MINUTES_BEFORE * 60 * 1000).toISOString(),
+        reminderSent: false,
+        reminderSentAt: null
+      };
+
+      slot.available = false;
+      db.bookings.push(booking);
+      writeDb(db);
+
+      sendWhatsAppMessage(ADMIN_WHATSAPP_TO, bookingAlertMessage(student, service, slot, booking.id)).catch(
+        (err) => {
+          console.error(`Failed to send booking alert for booking ${booking.id}:`, err.message);
+        }
+      );
+
+      return sendJson(res, 201, {
+        ...booking,
+        studentName: student.name,
+        serviceName: service.name,
+        summary: calculateStudentSummary(db, studentId)
+      });
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/students') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    try {
+      const payload = await readBody(req);
+      const required = ['name', 'email', 'ageGroup'];
+      const missing = required.filter((field) => !payload[field]);
+      if (missing.length) {
+        return sendJson(res, 400, { error: `Missing fields: ${missing.join(', ')}` });
+      }
+
+      const ageGroup = String(payload.ageGroup).toLowerCase();
+      if (!['kids', 'adults'].includes(ageGroup)) {
+        return sendJson(res, 400, { error: 'ageGroup must be kids or adults' });
+      }
+
+      if (!String(payload.email).includes('@')) {
+        return sendJson(res, 400, { error: 'Invalid email' });
+      }
+
+      const contactNo = String(payload.contactNo || '').trim();
+      if (contactNo && !isValidContactNo(contactNo)) {
+        return sendJson(res, 400, { error: 'Invalid contact number format' });
+      }
+
+      const db = readDb();
+      const email = String(payload.email).trim().toLowerCase();
+      if (db.students.some((item) => item.email === email)) {
+        return sendJson(res, 409, { error: 'Student email already exists' });
+      }
+
+      const student = {
+        id: nextId(db.students),
+        name: String(payload.name).trim(),
+        email,
+        contactNo,
+        ageGroup,
+        createdAt: new Date().toISOString()
+      };
+
+      db.students.push(student);
+      writeDb(db);
+      return sendJson(res, 201, student);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/payments') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    try {
+      const payload = await readBody(req);
+      const required = ['studentId', 'amount', 'lessonsPurchased'];
+      const missing = required.filter((field) => !payload[field]);
+      if (missing.length) {
+        return sendJson(res, 400, { error: `Missing fields: ${missing.join(', ')}` });
+      }
+
+      const db = readDb();
+      const studentId = Number(payload.studentId);
+      const amount = Number(payload.amount);
+      const lessonsPurchased = Number(payload.lessonsPurchased);
+
+      if (!db.students.some((item) => item.id === studentId)) {
+        return sendJson(res, 404, { error: 'Student not found' });
+      }
+
+      if (Number.isNaN(amount) || amount <= 0) {
+        return sendJson(res, 400, { error: 'amount must be a positive number' });
+      }
+
+      if (!Number.isInteger(lessonsPurchased) || lessonsPurchased <= 0) {
+        return sendJson(res, 400, { error: 'lessonsPurchased must be a positive integer' });
+      }
+
+      const payment = {
+        id: nextId(db.payments),
+        studentId,
+        amount: Number(amount.toFixed(2)),
+        lessonsPurchased,
+        note: payload.note ? String(payload.note).trim() : '',
+        createdAt: new Date().toISOString()
+      };
+
+      db.payments.push(payment);
+      writeDb(db);
+      return sendJson(res, 201, payment);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/slots') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    try {
+      const payload = await readBody(req);
+      const required = ['serviceId', 'start', 'end'];
+      const missing = required.filter((field) => !payload[field]);
+      if (missing.length) {
+        return sendJson(res, 400, { error: `Missing fields: ${missing.join(', ')}` });
+      }
+
+      const db = readDb();
+      const serviceId = Number(payload.serviceId);
+      if (!db.services.some((service) => service.id === serviceId)) {
+        return sendJson(res, 404, { error: 'Lesson type not found' });
+      }
+
+      const start = new Date(payload.start);
+      const end = new Date(payload.end);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+        return sendJson(res, 400, { error: 'Invalid slot time range' });
+      }
+
+      const slot = {
+        id: nextId(db.slots),
+        serviceId,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        available: true
+      };
+
+      db.slots.push(slot);
+      writeDb(db);
+      return sendJson(res, 201, slot);
+    } catch (err) {
+      return sendJson(res, 400, { error: err.message });
+    }
+  }
+
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+    return sendFile(res, path.join(PUBLIC_DIR, 'index.html'));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/admin') {
+    const session = getSession(req);
+    if (!session || session.role !== 'admin') {
+      res.writeHead(302, { Location: '/login' });
+      res.end();
+      return;
+    }
+
+    return sendFile(res, path.join(PUBLIC_DIR, 'admin.html'));
+  }
+
+  if (req.method === 'GET' && url.pathname === '/login') {
+    return sendFile(res, path.join(PUBLIC_DIR, 'login.html'));
+  }
+
+  const safePath = path.normalize(url.pathname).replace(/^\/+/, '');
+  const assetPath = path.join(PUBLIC_DIR, safePath);
+  if (assetPath.startsWith(PUBLIC_DIR) && fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+    return sendFile(res, assetPath);
+  }
+
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
+});
+
+setInterval(processDueReminders, 60 * 1000);
+processDueReminders().catch((err) => {
+  console.error('Reminder loop startup error:', err.message);
+});
+
+server.listen(PORT, () => {
+  console.log(`Tennis booking app running on http://localhost:${PORT}`);
+  if (isWhatsAppEnabled()) {
+    console.log('WhatsApp reminders are enabled.');
+  } else {
+    console.log('WhatsApp reminders are disabled. Configure Twilio env vars to enable.');
+  }
+});

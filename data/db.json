@@ -1,0 +1,142 @@
+{
+  "services": [
+    {
+      "id": 1,
+      "name": "Private Lesson - Kids",
+      "durationMinutes": 60,
+      "lessonType": "private",
+      "ageGroup": "kids"
+    },
+    {
+      "id": 2,
+      "name": "Private Lesson - Adults",
+      "durationMinutes": 60,
+      "lessonType": "private",
+      "ageGroup": "adults"
+    },
+    {
+      "id": 3,
+      "name": "Semi-Private Lesson - Kids",
+      "durationMinutes": 60,
+      "lessonType": "semi-private",
+      "ageGroup": "kids"
+    },
+    {
+      "id": 4,
+      "name": "Semi-Private Lesson - Adults",
+      "durationMinutes": 60,
+      "lessonType": "semi-private",
+      "ageGroup": "adults"
+    },
+    {
+      "id": 5,
+      "name": "Group Lesson - Kids",
+      "durationMinutes": 75,
+      "lessonType": "group",
+      "ageGroup": "kids"
+    },
+    {
+      "id": 6,
+      "name": "Group Lesson - Adults",
+      "durationMinutes": 75,
+      "lessonType": "group",
+      "ageGroup": "adults"
+    }
+  ],
+  "students": [
+    {
+      "id": 1,
+      "name": "Aarav Khan",
+      "email": "aarav@example.com",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-01T09:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Emma Stone",
+      "email": "emma@example.com",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-01T10:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Anderson",
+      "email": "xyz@gmail.com",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-01T22:04:46.821Z"
+    }
+  ],
+  "slots": [
+    {
+      "id": 1,
+      "serviceId": 1,
+      "start": "2026-03-03T15:00:00.000Z",
+      "end": "2026-03-03T16:00:00.000Z",
+      "available": false
+    },
+    {
+      "id": 2,
+      "serviceId": 2,
+      "start": "2026-03-03T17:00:00.000Z",
+      "end": "2026-03-03T18:00:00.000Z",
+      "available": true
+    },
+    {
+      "id": 3,
+      "serviceId": 3,
+      "start": "2026-03-04T15:00:00.000Z",
+      "end": "2026-03-04T16:00:00.000Z",
+      "available": true
+    },
+    {
+      "id": 4,
+      "serviceId": 6,
+      "start": "2026-03-04T18:00:00.000Z",
+      "end": "2026-03-04T19:15:00.000Z",
+      "available": true
+    },
+    {
+      "id": 5,
+      "serviceId": 1,
+      "start": "2026-03-04T10:07:00.000Z",
+      "end": "2026-04-01T10:07:00.000Z",
+      "available": true
+    }
+  ],
+  "bookings": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 1,
+      "notes": "",
+      "createdAt": "2026-03-01T22:03:52.831Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "amount": 300,
+      "lessonsPurchased": 6,
+      "note": "Kids package",
+      "createdAt": "2026-03-01T11:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "studentId": 2,
+      "amount": 240,
+      "lessonsPurchased": 4,
+      "note": "Adult private package",
+      "createdAt": "2026-03-01T11:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "studentId": 3,
+      "amount": 500,
+      "lessonsPurchased": 5,
+      "note": "",
+      "createdAt": "2026-03-01T22:05:39.118Z"
+    }
+  ]
+}

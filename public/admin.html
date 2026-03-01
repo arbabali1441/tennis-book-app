@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f5a43" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Tennis Admin</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/icon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <h1>Tennis Academy Admin</h1>
+      <p>Manage students, payments, lesson packages, and booking slots.</p>
+      <div class="hero-actions">
+        <button type="button" id="logout-btn" class="secondary-btn">Logout</button>
+        <a class="admin-link" href="/">Back to Booking</a>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Add Student</h2>
+      <form id="student-form">
+        <label>
+          Full Name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Client Contact No
+          <input type="text" name="contactNo" placeholder="+971501234567" />
+        </label>
+        <label>
+          Age Group
+          <select name="ageGroup" required>
+            <option value="">Select group</option>
+            <option value="kids">Kids</option>
+            <option value="adults">Adults</option>
+          </select>
+        </label>
+        <button type="submit">Create Student</button>
+      </form>
+      <p id="student-message" class="message"></p>
+    </section>
+
+    <section class="card">
+      <h2>Record Payment</h2>
+      <form id="payment-form">
+        <label>
+          Student
+          <select name="studentId" id="payment-student-select" required>
+            <option value="">Select student</option>
+          </select>
+        </label>
+        <label>
+          Amount (AED)
+          <input type="number" name="amount" min="1" step="0.01" required />
+        </label>
+        <label>
+          Lessons Purchased
+          <input type="number" name="lessonsPurchased" min="1" step="1" required />
+        </label>
+        <label>
+          Note (optional)
+          <input type="text" name="note" />
+        </label>
+        <button type="submit">Add Payment</button>
+      </form>
+      <p id="payment-message" class="message"></p>
+    </section>
+
+    <section class="card">
+      <h2>Create Lesson Slot</h2>
+      <form id="slot-form">
+        <label>
+          Lesson Type
+          <select name="serviceId" id="admin-service-select" required>
+            <option value="">Select lesson type</option>
+          </select>
+        </label>
+        <label>
+          Start
+          <input type="datetime-local" name="start" required />
+        </label>
+        <label>
+          End
+          <input type="datetime-local" name="end" required />
+        </label>
+        <button type="submit">Add Slot</button>
+      </form>
+      <p id="slot-message" class="message"></p>
+    </section>
+
+    <section class="card">
+      <h2>Student Totals</h2>
+      <ul id="student-totals-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>All Bookings</h2>
+      <ul id="admin-bookings-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>All Payments</h2>
+      <ul id="admin-payments-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>All Slots</h2>
+      <ul id="admin-slots-list" class="list"></ul>
+    </section>
+  </main>
+  <footer class="site-footer">Copyright © 2026 Tennis Book App. Eng AA Tech.</footer>
+
+  <script src="/pwa.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>
