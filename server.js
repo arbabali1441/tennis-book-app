@@ -75,6 +75,80 @@ function sendFile(res, filePath) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function paymentReceiptPath(paymentId) {
+  return `/receipt/${paymentId}`;
+}
+
+function paymentReceiptHtml(payment, student) {
+  const studentName = escapeHtml(student?.name || 'Unknown student');
+  const studentEmail = escapeHtml(student?.email || 'N/A');
+  const studentContact = escapeHtml(student?.contactNo || 'N/A');
+  const amount = Number(payment.amount || 0).toFixed(2);
+  const lessonsPurchased = Number(payment.lessonsPurchased || 0);
+  const method = escapeHtml(payment.method || 'N/A');
+  const note = escapeHtml(payment.note || 'N/A');
+  const paymentDate = escapeHtml(new Date(payment.createdAt).toLocaleString());
+  const receiptNo = `RCPT-${String(payment.id).padStart(6, '0')}`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payment Receipt #${escapeHtml(String(payment.id))}</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f3f4f6; color: #111827; }
+    .wrap { max-width: 780px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+    h1 { margin: 0 0 8px; font-size: 1.45rem; }
+    .muted { color: #6b7280; margin: 0 0 20px; }
+    .badge { display: inline-block; font-size: 0.78rem; background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; border-radius: 999px; padding: 4px 10px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 16px; }
+    .item { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+    .k { display:block; font-size: 0.78rem; color: #6b7280; margin-bottom: 4px; }
+    .v { font-weight: 600; word-break: break-word; }
+    .amount { font-size: 1.5rem; color: #065f46; }
+    .actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { border: 1px solid #d1d5db; background: #fff; color: #111827; border-radius: 8px; padding: 9px 14px; font-weight: 600; cursor: pointer; }
+    .btn:hover { background: #f3f4f6; }
+    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <span class="badge">Online Receipt</span>
+      <h1>Tennis Booking Payment Receipt</h1>
+      <p class="muted">Receipt No: <strong>${escapeHtml(receiptNo)}</strong></p>
+      <div class="grid">
+        <div class="item"><span class="k">Student</span><span class="v">${studentName}</span></div>
+        <div class="item"><span class="k">Email</span><span class="v">${studentEmail}</span></div>
+        <div class="item"><span class="k">Contact</span><span class="v">${studentContact}</span></div>
+        <div class="item"><span class="k">Payment Date</span><span class="v">${paymentDate}</span></div>
+        <div class="item"><span class="k">Amount</span><span class="v amount">AED ${escapeHtml(amount)}</span></div>
+        <div class="item"><span class="k">Lessons Purchased</span><span class="v">${escapeHtml(String(lessonsPurchased))}</span></div>
+        <div class="item"><span class="k">Payment Method</span><span class="v">${method}</span></div>
+        <div class="item"><span class="k">Note</span><span class="v">${note}</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="window.print()">Print</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -844,7 +918,8 @@ async function handleRequest(req, res) {
         ...payment,
         studentName: student ? student.name : 'Unknown student',
         studentEmail: student ? student.email || '' : '',
-        studentContactNo: student ? student.contactNo || '' : ''
+        studentContactNo: student ? student.contactNo || '' : '',
+        receiptUrl: paymentReceiptPath(payment.id)
       };
     });
 
@@ -1135,16 +1210,37 @@ async function handleRequest(req, res) {
         studentId,
         amount: Number(amount.toFixed(2)),
         lessonsPurchased,
+        method: payload.method ? String(payload.method).trim() : '',
         note: payload.note ? String(payload.note).trim() : '',
         createdAt: new Date().toISOString()
       };
 
       db.payments.push(payment);
       writeDb(db);
-      return sendJson(res, 201, payment);
+      return sendJson(res, 201, {
+        ...payment,
+        receiptUrl: paymentReceiptPath(payment.id)
+      });
     } catch (err) {
       return sendJson(res, 400, { error: err.message });
     }
+  }
+
+  const receiptMatch = req.method === 'GET' ? url.pathname.match(/^\/receipt\/(\d+)$/) : null;
+  if (receiptMatch) {
+    const db = readDb();
+    const paymentId = Number(receiptMatch[1]);
+    const payment = db.payments.find((item) => item.id === paymentId);
+    if (!payment) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Receipt not found');
+      return;
+    }
+
+    const student = db.students.find((item) => item.id === payment.studentId);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(paymentReceiptHtml(payment, student));
+    return;
   }
 
   if (req.method === 'POST' && url.pathname === '/api/slots') {

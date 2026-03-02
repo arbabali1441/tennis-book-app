@@ -7,6 +7,7 @@ const serviceSelect = document.getElementById('admin-service-select');
 
 const studentMessage = document.getElementById('student-message');
 const paymentMessage = document.getElementById('payment-message');
+const paymentReceiptActions = document.getElementById('payment-receipt-actions');
 const slotMessage = document.getElementById('slot-message');
 
 const studentTotalsList = document.getElementById('student-totals-list');
@@ -47,6 +48,85 @@ function toIsoString(localDatetime) {
 
 function formatCurrency(value) {
   return `AED ${Number(value || 0).toFixed(2)}`;
+}
+
+function getReceiptUrl(payment) {
+  const path = payment?.receiptUrl || (payment?.id ? `/receipt/${payment.id}` : '');
+  if (!path) {
+    return '';
+  }
+  return path.startsWith('http') ? path : `${window.location.origin}${path}`;
+}
+
+function clearPaymentReceiptActions() {
+  paymentReceiptActions.textContent = '';
+  paymentReceiptActions.style.color = '';
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  return false;
+}
+
+function renderPaymentReceiptActions(payment) {
+  const receiptUrl = getReceiptUrl(payment);
+  clearPaymentReceiptActions();
+  if (!receiptUrl) {
+    return;
+  }
+
+  const openLink = document.createElement('a');
+  openLink.href = receiptUrl;
+  openLink.target = '_blank';
+  openLink.rel = 'noopener noreferrer';
+  openLink.textContent = 'Open Receipt';
+  openLink.className = 'admin-link';
+
+  const separator = document.createElement('span');
+  separator.textContent = ' | ';
+
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'secondary-btn';
+  shareBtn.textContent = 'Share Receipt';
+  shareBtn.addEventListener('click', async () => {
+    const sharePayload = {
+      title: 'Payment Receipt',
+      text: `Payment receipt #${payment.id}`,
+      url: receiptUrl
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(sharePayload);
+        paymentReceiptActions.style.color = '#047857';
+        paymentReceiptActions.appendChild(document.createTextNode(' | Shared'));
+        return;
+      } catch {
+        // Fall back to clipboard copy
+      }
+    }
+
+    try {
+      const copied = await copyText(receiptUrl);
+      if (copied) {
+        paymentReceiptActions.style.color = '#047857';
+        paymentReceiptActions.appendChild(document.createTextNode(' | Link copied'));
+      } else {
+        paymentReceiptActions.style.color = '#b91c1c';
+        paymentReceiptActions.appendChild(document.createTextNode(' | Copy not supported on this browser'));
+      }
+    } catch {
+      paymentReceiptActions.style.color = '#b91c1c';
+      paymentReceiptActions.appendChild(document.createTextNode(' | Unable to copy link'));
+    }
+  });
+
+  paymentReceiptActions.appendChild(openLink);
+  paymentReceiptActions.appendChild(separator);
+  paymentReceiptActions.appendChild(shareBtn);
 }
 
 function countDailyLessons(bookings) {
@@ -486,9 +566,30 @@ async function fetchPayments() {
 
   for (const payment of payments.slice().reverse()) {
     const li = document.createElement('li');
-    li.textContent = `${payment.studentName} | Email: ${payment.studentEmail || 'N/A'} | Contact: ${
+    const text = document.createElement('span');
+    const methodLabel = payment.method ? ` | Method: ${payment.method}` : '';
+    const noteLabel = payment.note ? ` | Note: ${payment.note}` : '';
+    text.textContent = `${payment.studentName} | Email: ${payment.studentEmail || 'N/A'} | Contact: ${
       payment.studentContactNo || 'N/A'
-    } | Paid: AED ${payment.amount.toFixed(2)} for ${payment.lessonsPurchased} lessons on ${formatDate(payment.createdAt)}`;
+    } | Paid: AED ${payment.amount.toFixed(2)} for ${payment.lessonsPurchased} lessons${methodLabel}${noteLabel} on ${formatDate(payment.createdAt)}`;
+    li.appendChild(text);
+
+    const openBtn = document.createElement('a');
+    openBtn.href = getReceiptUrl(payment);
+    openBtn.target = '_blank';
+    openBtn.rel = 'noopener noreferrer';
+    openBtn.className = 'list-action';
+    openBtn.textContent = 'Open Receipt';
+    li.appendChild(openBtn);
+
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.className = 'list-action';
+    shareBtn.dataset.action = 'share-receipt';
+    shareBtn.dataset.receiptUrl = getReceiptUrl(payment);
+    shareBtn.textContent = 'Share Receipt';
+    li.appendChild(shareBtn);
+
     paymentsList.appendChild(li);
   }
 }
@@ -678,6 +779,42 @@ bookingsList.addEventListener('click', async (event) => {
   await fetchStudentSummaries();
 });
 
+paymentsList.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (target.dataset.action !== 'share-receipt') {
+    return;
+  }
+
+  const receiptUrl = target.dataset.receiptUrl;
+  if (!receiptUrl) {
+    return;
+  }
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'Payment Receipt',
+        text: 'Online payment receipt',
+        url: receiptUrl
+      });
+      paymentMessage.textContent = 'Receipt shared';
+      paymentMessage.style.color = '#047857';
+      return;
+    }
+
+    const copied = await copyText(receiptUrl);
+    paymentMessage.textContent = copied ? 'Receipt link copied' : 'Copy not supported on this browser';
+    paymentMessage.style.color = copied ? '#047857' : '#b91c1c';
+  } catch {
+    paymentMessage.textContent = 'Unable to share receipt';
+    paymentMessage.style.color = '#b91c1c';
+  }
+});
+
 studentForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   studentMessage.textContent = 'Saving student...';
@@ -711,6 +848,7 @@ studentForm.addEventListener('submit', async (event) => {
 paymentForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   paymentMessage.textContent = 'Saving payment...';
+  clearPaymentReceiptActions();
 
   const payload = Object.fromEntries(new FormData(paymentForm).entries());
   const response = await fetch('/api/payments', {
@@ -733,6 +871,7 @@ paymentForm.addEventListener('submit', async (event) => {
 
   paymentMessage.textContent = 'Payment added';
   paymentMessage.style.color = '#047857';
+  renderPaymentReceiptActions(data);
   paymentForm.reset();
   await fetchPayments();
   await fetchPaymentsSummary();

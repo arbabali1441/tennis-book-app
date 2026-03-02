@@ -81,12 +81,24 @@
           <input type="number" name="lessonsPurchased" min="1" step="1" required />
         </label>
         <label>
+          Payment Method
+          <select name="method">
+            <option value="">Select method</option>
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Apple Pay">Apple Pay</option>
+            <option value="Google Pay">Google Pay</option>
+          </select>
+        </label>
+        <label>
           Note (optional)
           <input type="text" name="note" />
         </label>
         <button type="submit">Add Payment</button>
       </form>
       <p id="payment-message" class="message"></p>
+      <p id="payment-receipt-actions" class="message"></p>
     </section>
 
     <section class="card" id="section-create-slot">

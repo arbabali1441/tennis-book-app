@@ -352,6 +352,58 @@ test('payments summary returns total, daily sale, and monthly sale', async () =>
   }
 });
 
+test('payment creation returns receipt URL and public receipt page renders', async () => {
+  const { tempDir, tempDbPath } = copyFixtureDb();
+  try {
+    const handler = loadHandlerWithDb(tempDbPath);
+
+    const loginResponse = await invoke(handler, {
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' },
+      body: { role: 'admin', password: 'admin1234' }
+    });
+    const sessionCookie = loginResponse.headers['Set-Cookie'].split(';')[0];
+
+    const createPayment = await invoke(handler, {
+      method: 'POST',
+      url: '/api/payments',
+      headers: { 'content-type': 'application/json', cookie: sessionCookie },
+      body: {
+        studentId: 1,
+        amount: 180,
+        lessonsPurchased: 2,
+        method: 'Card',
+        note: 'Receipt route test'
+      }
+    });
+    assert.equal(createPayment.statusCode, 201);
+    assert.equal(createPayment.json.receiptUrl, `/receipt/${createPayment.json.id}`);
+
+    const adminPayments = await invoke(handler, {
+      method: 'GET',
+      url: '/api/payments',
+      headers: { cookie: sessionCookie }
+    });
+    assert.equal(adminPayments.statusCode, 200);
+    assert.equal(Array.isArray(adminPayments.json), true);
+    assert.equal(
+      adminPayments.json.some((item) => item.id === createPayment.json.id && item.receiptUrl === createPayment.json.receiptUrl),
+      true
+    );
+
+    const receiptResponse = await invoke(handler, {
+      method: 'GET',
+      url: createPayment.json.receiptUrl
+    });
+    assert.equal(receiptResponse.statusCode, 200);
+    assert.equal(receiptResponse.bodyText.includes('Tennis Booking Payment Receipt'), true);
+    assert.equal(receiptResponse.bodyText.includes('Receipt No'), true);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('admin can delete empty student and cannot delete student with history', async () => {
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {

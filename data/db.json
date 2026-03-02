@@ -64,6 +64,134 @@
       "email": "xyz@gmail.com",
       "ageGroup": "adults",
       "createdAt": "2026-03-01T22:04:46.821Z"
+    },
+    {
+      "id": 4,
+      "name": "Noah Ali",
+      "email": "noah.ali@demo.local",
+      "contactNo": "+97150000100",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 5,
+      "name": "Mia Rahman",
+      "email": "mia.rahman@demo.local",
+      "contactNo": "+97150000101",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 6,
+      "name": "Luca Nasser",
+      "email": "luca.nasser@demo.local",
+      "contactNo": "+97150000102",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 7,
+      "name": "Sara Khan",
+      "email": "sara.khan@demo.local",
+      "contactNo": "+97150000103",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 8,
+      "name": "Zara Malik",
+      "email": "zara.malik@demo.local",
+      "contactNo": "+97150000104",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 9,
+      "name": "Omar Saeed",
+      "email": "omar.saeed@demo.local",
+      "contactNo": "+97150000105",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 10,
+      "name": "Adam Rehman",
+      "email": "adam.rehman@demo.local",
+      "contactNo": "+97150000106",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 11,
+      "name": "Aisha Noor",
+      "email": "aisha.noor@demo.local",
+      "contactNo": "+97150000107",
+      "ageGroup": "kids",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 12,
+      "name": "James Carter",
+      "email": "james.carter@demo.local",
+      "contactNo": "+97150000108",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 13,
+      "name": "Olivia Reed",
+      "email": "olivia.reed@demo.local",
+      "contactNo": "+97150000109",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 14,
+      "name": "Ethan Brooks",
+      "email": "ethan.brooks@demo.local",
+      "contactNo": "+97150000110",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 15,
+      "name": "Ava Turner",
+      "email": "ava.turner@demo.local",
+      "contactNo": "+97150000111",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.923Z"
+    },
+    {
+      "id": 16,
+      "name": "Liam Scott",
+      "email": "liam.scott@demo.local",
+      "contactNo": "+97150000112",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.924Z"
+    },
+    {
+      "id": 17,
+      "name": "Sophia Green",
+      "email": "sophia.green@demo.local",
+      "contactNo": "+97150000113",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.924Z"
+    },
+    {
+      "id": 18,
+      "name": "Mason Hill",
+      "email": "mason.hill@demo.local",
+      "contactNo": "+97150000114",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.924Z"
+    },
+    {
+      "id": 19,
+      "name": "Ella Price",
+      "email": "ella.price@demo.local",
+      "contactNo": "+97150000115",
+      "ageGroup": "adults",
+      "createdAt": "2026-03-02T02:34:12.924Z"
     }
   ],
   "slots": [
@@ -101,6 +229,318 @@
       "start": "2026-03-04T10:07:00.000Z",
       "end": "2026-04-01T10:07:00.000Z",
       "available": true
+    },
+    {
+      "id": 6,
+      "serviceId": 1,
+      "start": "2026-03-01T13:00:00.000Z",
+      "end": "2026-03-01T14:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 7,
+      "serviceId": 2,
+      "start": "2026-03-06T14:15:00.000Z",
+      "end": "2026-03-06T15:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 8,
+      "serviceId": 3,
+      "start": "2026-03-11T15:30:00.000Z",
+      "end": "2026-03-11T16:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 9,
+      "serviceId": 4,
+      "start": "2026-03-16T16:45:00.000Z",
+      "end": "2026-03-16T17:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 10,
+      "serviceId": 5,
+      "start": "2026-03-21T17:00:00.000Z",
+      "end": "2026-03-21T18:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 11,
+      "serviceId": 6,
+      "start": "2026-03-26T13:15:00.000Z",
+      "end": "2026-03-26T14:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 12,
+      "serviceId": 1,
+      "start": "2026-03-31T14:30:00.000Z",
+      "end": "2026-03-31T15:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 13,
+      "serviceId": 2,
+      "start": "2026-03-05T15:45:00.000Z",
+      "end": "2026-03-05T16:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 14,
+      "serviceId": 3,
+      "start": "2026-03-10T16:00:00.000Z",
+      "end": "2026-03-10T17:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 15,
+      "serviceId": 4,
+      "start": "2026-03-15T17:15:00.000Z",
+      "end": "2026-03-15T18:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 16,
+      "serviceId": 5,
+      "start": "2026-03-20T13:30:00.000Z",
+      "end": "2026-03-20T14:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 17,
+      "serviceId": 6,
+      "start": "2026-03-25T14:45:00.000Z",
+      "end": "2026-03-25T16:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 18,
+      "serviceId": 1,
+      "start": "2026-03-30T15:00:00.000Z",
+      "end": "2026-03-30T16:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 19,
+      "serviceId": 2,
+      "start": "2026-03-04T16:15:00.000Z",
+      "end": "2026-03-04T17:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 20,
+      "serviceId": 3,
+      "start": "2026-03-09T17:30:00.000Z",
+      "end": "2026-03-09T18:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 21,
+      "serviceId": 4,
+      "start": "2026-03-14T13:45:00.000Z",
+      "end": "2026-03-14T14:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 22,
+      "serviceId": 5,
+      "start": "2026-03-19T14:00:00.000Z",
+      "end": "2026-03-19T15:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 23,
+      "serviceId": 6,
+      "start": "2026-03-24T15:15:00.000Z",
+      "end": "2026-03-24T16:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 24,
+      "serviceId": 1,
+      "start": "2026-03-29T16:30:00.000Z",
+      "end": "2026-03-29T17:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 25,
+      "serviceId": 2,
+      "start": "2026-03-03T17:45:00.000Z",
+      "end": "2026-03-03T18:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 26,
+      "serviceId": 3,
+      "start": "2026-03-08T13:00:00.000Z",
+      "end": "2026-03-08T14:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 27,
+      "serviceId": 4,
+      "start": "2026-03-13T14:15:00.000Z",
+      "end": "2026-03-13T15:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 28,
+      "serviceId": 5,
+      "start": "2026-03-18T15:30:00.000Z",
+      "end": "2026-03-18T16:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 29,
+      "serviceId": 6,
+      "start": "2026-03-23T16:45:00.000Z",
+      "end": "2026-03-23T18:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 30,
+      "serviceId": 1,
+      "start": "2026-03-28T17:00:00.000Z",
+      "end": "2026-03-28T18:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 31,
+      "serviceId": 2,
+      "start": "2026-03-02T13:15:00.000Z",
+      "end": "2026-03-02T14:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 32,
+      "serviceId": 3,
+      "start": "2026-03-07T14:30:00.000Z",
+      "end": "2026-03-07T15:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 33,
+      "serviceId": 4,
+      "start": "2026-03-12T15:45:00.000Z",
+      "end": "2026-03-12T16:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 34,
+      "serviceId": 5,
+      "start": "2026-03-17T16:00:00.000Z",
+      "end": "2026-03-17T17:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 35,
+      "serviceId": 6,
+      "start": "2026-03-22T17:15:00.000Z",
+      "end": "2026-03-22T18:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 36,
+      "serviceId": 1,
+      "start": "2026-03-27T13:30:00.000Z",
+      "end": "2026-03-27T14:30:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 37,
+      "serviceId": 2,
+      "start": "2026-03-01T14:45:00.000Z",
+      "end": "2026-03-01T15:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 38,
+      "serviceId": 3,
+      "start": "2026-03-06T15:00:00.000Z",
+      "end": "2026-03-06T16:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 39,
+      "serviceId": 4,
+      "start": "2026-03-11T16:15:00.000Z",
+      "end": "2026-03-11T17:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 40,
+      "serviceId": 5,
+      "start": "2026-03-16T17:30:00.000Z",
+      "end": "2026-03-16T18:45:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 41,
+      "serviceId": 6,
+      "start": "2026-03-21T13:45:00.000Z",
+      "end": "2026-03-21T15:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 42,
+      "serviceId": 1,
+      "start": "2026-03-26T14:00:00.000Z",
+      "end": "2026-03-26T15:00:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 43,
+      "serviceId": 2,
+      "start": "2026-03-31T15:15:00.000Z",
+      "end": "2026-03-31T16:15:00.000Z",
+      "available": false,
+      "managed": true
+    },
+    {
+      "id": 44,
+      "serviceId": 3,
+      "start": "2026-03-05T16:30:00.000Z",
+      "end": "2026-03-05T17:30:00.000Z",
+      "available": false,
+      "managed": true
     }
   ],
   "bookings": [
@@ -111,6 +551,435 @@
       "slotId": 1,
       "notes": "",
       "createdAt": "2026-03-01T22:03:52.831Z"
+    },
+    {
+      "id": 2,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 6,
+      "notes": "Month seed booking 1 | payment: Cash | amount AED 120.00",
+      "createdAt": "2026-03-01T08:30:00.000Z",
+      "reminderAt": "2026-03-01T10:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 3,
+      "studentId": 13,
+      "serviceId": 2,
+      "slotId": 7,
+      "notes": "Month seed booking 2 | payment: Card | amount AED 140.00",
+      "createdAt": "2026-03-06T08:30:00.000Z",
+      "reminderAt": "2026-03-06T11:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 4,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 8,
+      "notes": "Month seed booking 3 | payment: Bank Transfer | amount AED 150.00",
+      "createdAt": "2026-03-11T08:30:00.000Z",
+      "reminderAt": "2026-03-11T12:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 5,
+      "studentId": 19,
+      "serviceId": 4,
+      "slotId": 9,
+      "notes": "Month seed booking 4 | payment: Apple Pay | amount AED 175.00",
+      "createdAt": "2026-03-16T08:30:00.000Z",
+      "reminderAt": "2026-03-16T13:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 6,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 10,
+      "notes": "Month seed booking 5 | payment: Google Pay | amount AED 200.00",
+      "createdAt": "2026-03-21T08:30:00.000Z",
+      "reminderAt": "2026-03-21T14:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 7,
+      "studentId": 15,
+      "serviceId": 6,
+      "slotId": 11,
+      "notes": "Month seed booking 6 | payment: Cash | amount AED 220.00",
+      "createdAt": "2026-03-26T08:30:00.000Z",
+      "reminderAt": "2026-03-26T10:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 8,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 12,
+      "notes": "Month seed booking 7 | payment: Card | amount AED 240.00",
+      "createdAt": "2026-03-31T08:30:00.000Z",
+      "reminderAt": "2026-03-31T11:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 9,
+      "studentId": 3,
+      "serviceId": 2,
+      "slotId": 13,
+      "notes": "Month seed booking 8 | payment: Bank Transfer | amount AED 260.00",
+      "createdAt": "2026-03-05T08:30:00.000Z",
+      "reminderAt": "2026-03-05T12:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 10,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 14,
+      "notes": "Month seed booking 9 | payment: Apple Pay | amount AED 300.00",
+      "createdAt": "2026-03-10T08:30:00.000Z",
+      "reminderAt": "2026-03-10T13:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 11,
+      "studentId": 17,
+      "serviceId": 4,
+      "slotId": 15,
+      "notes": "Month seed booking 10 | payment: Google Pay | amount AED 320.00",
+      "createdAt": "2026-03-15T08:30:00.000Z",
+      "reminderAt": "2026-03-15T14:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 12,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 16,
+      "notes": "Month seed booking 11 | payment: Cash | amount AED 360.00",
+      "createdAt": "2026-03-20T08:30:00.000Z",
+      "reminderAt": "2026-03-20T10:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 13,
+      "studentId": 13,
+      "serviceId": 6,
+      "slotId": 17,
+      "notes": "Month seed booking 12 | payment: Card | amount AED 400.00",
+      "createdAt": "2026-03-25T08:30:00.000Z",
+      "reminderAt": "2026-03-25T11:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 14,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 18,
+      "notes": "Month seed booking 13 | payment: Bank Transfer | amount AED 120.00",
+      "createdAt": "2026-03-30T08:30:00.000Z",
+      "reminderAt": "2026-03-30T12:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 15,
+      "studentId": 19,
+      "serviceId": 2,
+      "slotId": 19,
+      "notes": "Month seed booking 14 | payment: Apple Pay | amount AED 140.00",
+      "createdAt": "2026-03-04T08:30:00.000Z",
+      "reminderAt": "2026-03-04T13:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 16,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 20,
+      "notes": "Month seed booking 15 | payment: Google Pay | amount AED 150.00",
+      "createdAt": "2026-03-09T08:30:00.000Z",
+      "reminderAt": "2026-03-09T14:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 17,
+      "studentId": 15,
+      "serviceId": 4,
+      "slotId": 21,
+      "notes": "Month seed booking 16 | payment: Cash | amount AED 175.00",
+      "createdAt": "2026-03-14T08:30:00.000Z",
+      "reminderAt": "2026-03-14T10:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 18,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 22,
+      "notes": "Month seed booking 17 | payment: Card | amount AED 200.00",
+      "createdAt": "2026-03-19T08:30:00.000Z",
+      "reminderAt": "2026-03-19T11:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 19,
+      "studentId": 3,
+      "serviceId": 6,
+      "slotId": 23,
+      "notes": "Month seed booking 18 | payment: Bank Transfer | amount AED 220.00",
+      "createdAt": "2026-03-24T08:30:00.000Z",
+      "reminderAt": "2026-03-24T12:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 20,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 24,
+      "notes": "Month seed booking 19 | payment: Apple Pay | amount AED 240.00",
+      "createdAt": "2026-03-29T08:30:00.000Z",
+      "reminderAt": "2026-03-29T13:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 21,
+      "studentId": 17,
+      "serviceId": 2,
+      "slotId": 25,
+      "notes": "Month seed booking 20 | payment: Google Pay | amount AED 260.00",
+      "createdAt": "2026-03-03T08:30:00.000Z",
+      "reminderAt": "2026-03-03T14:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 22,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 26,
+      "notes": "Month seed booking 21 | payment: Cash | amount AED 300.00",
+      "createdAt": "2026-03-08T08:30:00.000Z",
+      "reminderAt": "2026-03-08T10:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 23,
+      "studentId": 13,
+      "serviceId": 4,
+      "slotId": 27,
+      "notes": "Month seed booking 22 | payment: Card | amount AED 320.00",
+      "createdAt": "2026-03-13T08:30:00.000Z",
+      "reminderAt": "2026-03-13T11:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 24,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 28,
+      "notes": "Month seed booking 23 | payment: Bank Transfer | amount AED 360.00",
+      "createdAt": "2026-03-18T08:30:00.000Z",
+      "reminderAt": "2026-03-18T12:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 25,
+      "studentId": 19,
+      "serviceId": 6,
+      "slotId": 29,
+      "notes": "Month seed booking 24 | payment: Apple Pay | amount AED 400.00",
+      "createdAt": "2026-03-23T08:30:00.000Z",
+      "reminderAt": "2026-03-23T13:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 26,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 30,
+      "notes": "Month seed booking 25 | payment: Google Pay | amount AED 120.00",
+      "createdAt": "2026-03-28T08:30:00.000Z",
+      "reminderAt": "2026-03-28T14:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 27,
+      "studentId": 15,
+      "serviceId": 2,
+      "slotId": 31,
+      "notes": "Month seed booking 26 | payment: Cash | amount AED 140.00",
+      "createdAt": "2026-03-02T08:30:00.000Z",
+      "reminderAt": "2026-03-02T10:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 28,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 32,
+      "notes": "Month seed booking 27 | payment: Card | amount AED 150.00",
+      "createdAt": "2026-03-07T08:30:00.000Z",
+      "reminderAt": "2026-03-07T11:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 29,
+      "studentId": 3,
+      "serviceId": 4,
+      "slotId": 33,
+      "notes": "Month seed booking 28 | payment: Bank Transfer | amount AED 175.00",
+      "createdAt": "2026-03-12T08:30:00.000Z",
+      "reminderAt": "2026-03-12T12:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 30,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 34,
+      "notes": "Month seed booking 29 | payment: Apple Pay | amount AED 200.00",
+      "createdAt": "2026-03-17T08:30:00.000Z",
+      "reminderAt": "2026-03-17T13:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 31,
+      "studentId": 17,
+      "serviceId": 6,
+      "slotId": 35,
+      "notes": "Month seed booking 30 | payment: Google Pay | amount AED 220.00",
+      "createdAt": "2026-03-22T08:30:00.000Z",
+      "reminderAt": "2026-03-22T14:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 32,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 36,
+      "notes": "Month seed booking 31 | payment: Cash | amount AED 240.00",
+      "createdAt": "2026-03-27T08:30:00.000Z",
+      "reminderAt": "2026-03-27T10:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 33,
+      "studentId": 13,
+      "serviceId": 2,
+      "slotId": 37,
+      "notes": "Month seed booking 32 | payment: Card | amount AED 260.00",
+      "createdAt": "2026-03-01T08:30:00.000Z",
+      "reminderAt": "2026-03-01T11:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 34,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 38,
+      "notes": "Month seed booking 33 | payment: Bank Transfer | amount AED 300.00",
+      "createdAt": "2026-03-06T08:30:00.000Z",
+      "reminderAt": "2026-03-06T12:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 35,
+      "studentId": 19,
+      "serviceId": 4,
+      "slotId": 39,
+      "notes": "Month seed booking 34 | payment: Apple Pay | amount AED 320.00",
+      "createdAt": "2026-03-11T08:30:00.000Z",
+      "reminderAt": "2026-03-11T13:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 36,
+      "studentId": 6,
+      "serviceId": 5,
+      "slotId": 40,
+      "notes": "Month seed booking 35 | payment: Google Pay | amount AED 360.00",
+      "createdAt": "2026-03-16T08:30:00.000Z",
+      "reminderAt": "2026-03-16T14:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 37,
+      "studentId": 15,
+      "serviceId": 6,
+      "slotId": 41,
+      "notes": "Month seed booking 36 | payment: Cash | amount AED 400.00",
+      "createdAt": "2026-03-21T08:30:00.000Z",
+      "reminderAt": "2026-03-21T10:45:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 38,
+      "studentId": 1,
+      "serviceId": 1,
+      "slotId": 42,
+      "notes": "Month seed booking 37 | payment: Card | amount AED 120.00",
+      "createdAt": "2026-03-26T08:30:00.000Z",
+      "reminderAt": "2026-03-26T11:00:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 39,
+      "studentId": 3,
+      "serviceId": 2,
+      "slotId": 43,
+      "notes": "Month seed booking 38 | payment: Bank Transfer | amount AED 140.00",
+      "createdAt": "2026-03-31T08:30:00.000Z",
+      "reminderAt": "2026-03-31T12:15:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
+    },
+    {
+      "id": 40,
+      "studentId": 9,
+      "serviceId": 3,
+      "slotId": 44,
+      "notes": "Month seed booking 39 | payment: Apple Pay | amount AED 150.00",
+      "createdAt": "2026-03-05T08:30:00.000Z",
+      "reminderAt": "2026-03-05T13:30:00.000Z",
+      "reminderSent": false,
+      "reminderSentAt": null
     }
   ],
   "payments": [
@@ -137,6 +1006,357 @@
       "lessonsPurchased": 5,
       "note": "",
       "createdAt": "2026-03-01T22:05:39.118Z"
+    },
+    {
+      "id": 4,
+      "studentId": 1,
+      "amount": 120,
+      "lessonsPurchased": 1,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 1",
+      "createdAt": "2026-03-01T07:15:00.000Z"
+    },
+    {
+      "id": 5,
+      "studentId": 13,
+      "amount": 140,
+      "lessonsPurchased": 2,
+      "method": "Card",
+      "note": "Seeded payment for month booking 2",
+      "createdAt": "2026-03-06T07:15:00.000Z"
+    },
+    {
+      "id": 6,
+      "studentId": 9,
+      "amount": 150,
+      "lessonsPurchased": 3,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 3",
+      "createdAt": "2026-03-11T07:15:00.000Z"
+    },
+    {
+      "id": 7,
+      "studentId": 19,
+      "amount": 175,
+      "lessonsPurchased": 4,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 4",
+      "createdAt": "2026-03-16T07:15:00.000Z"
+    },
+    {
+      "id": 8,
+      "studentId": 6,
+      "amount": 200,
+      "lessonsPurchased": 5,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 5",
+      "createdAt": "2026-03-21T07:15:00.000Z"
+    },
+    {
+      "id": 9,
+      "studentId": 15,
+      "amount": 220,
+      "lessonsPurchased": 6,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 6",
+      "createdAt": "2026-03-26T07:15:00.000Z"
+    },
+    {
+      "id": 10,
+      "studentId": 1,
+      "amount": 240,
+      "lessonsPurchased": 1,
+      "method": "Card",
+      "note": "Seeded payment for month booking 7",
+      "createdAt": "2026-03-31T07:15:00.000Z"
+    },
+    {
+      "id": 11,
+      "studentId": 3,
+      "amount": 260,
+      "lessonsPurchased": 2,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 8",
+      "createdAt": "2026-03-05T07:15:00.000Z"
+    },
+    {
+      "id": 12,
+      "studentId": 9,
+      "amount": 300,
+      "lessonsPurchased": 3,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 9",
+      "createdAt": "2026-03-10T07:15:00.000Z"
+    },
+    {
+      "id": 13,
+      "studentId": 17,
+      "amount": 320,
+      "lessonsPurchased": 4,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 10",
+      "createdAt": "2026-03-15T07:15:00.000Z"
+    },
+    {
+      "id": 14,
+      "studentId": 6,
+      "amount": 360,
+      "lessonsPurchased": 5,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 11",
+      "createdAt": "2026-03-20T07:15:00.000Z"
+    },
+    {
+      "id": 15,
+      "studentId": 13,
+      "amount": 400,
+      "lessonsPurchased": 6,
+      "method": "Card",
+      "note": "Seeded payment for month booking 12",
+      "createdAt": "2026-03-25T07:15:00.000Z"
+    },
+    {
+      "id": 16,
+      "studentId": 1,
+      "amount": 120,
+      "lessonsPurchased": 1,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 13",
+      "createdAt": "2026-03-30T07:15:00.000Z"
+    },
+    {
+      "id": 17,
+      "studentId": 19,
+      "amount": 140,
+      "lessonsPurchased": 2,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 14",
+      "createdAt": "2026-03-04T07:15:00.000Z"
+    },
+    {
+      "id": 18,
+      "studentId": 9,
+      "amount": 150,
+      "lessonsPurchased": 3,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 15",
+      "createdAt": "2026-03-09T07:15:00.000Z"
+    },
+    {
+      "id": 19,
+      "studentId": 15,
+      "amount": 175,
+      "lessonsPurchased": 4,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 16",
+      "createdAt": "2026-03-14T07:15:00.000Z"
+    },
+    {
+      "id": 20,
+      "studentId": 6,
+      "amount": 200,
+      "lessonsPurchased": 5,
+      "method": "Card",
+      "note": "Seeded payment for month booking 17",
+      "createdAt": "2026-03-19T07:15:00.000Z"
+    },
+    {
+      "id": 21,
+      "studentId": 3,
+      "amount": 220,
+      "lessonsPurchased": 6,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 18",
+      "createdAt": "2026-03-24T07:15:00.000Z"
+    },
+    {
+      "id": 22,
+      "studentId": 1,
+      "amount": 240,
+      "lessonsPurchased": 1,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 19",
+      "createdAt": "2026-03-29T07:15:00.000Z"
+    },
+    {
+      "id": 23,
+      "studentId": 17,
+      "amount": 260,
+      "lessonsPurchased": 2,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 20",
+      "createdAt": "2026-03-03T07:15:00.000Z"
+    },
+    {
+      "id": 24,
+      "studentId": 9,
+      "amount": 300,
+      "lessonsPurchased": 3,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 21",
+      "createdAt": "2026-03-08T07:15:00.000Z"
+    },
+    {
+      "id": 25,
+      "studentId": 13,
+      "amount": 320,
+      "lessonsPurchased": 4,
+      "method": "Card",
+      "note": "Seeded payment for month booking 22",
+      "createdAt": "2026-03-13T07:15:00.000Z"
+    },
+    {
+      "id": 26,
+      "studentId": 6,
+      "amount": 360,
+      "lessonsPurchased": 5,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 23",
+      "createdAt": "2026-03-18T07:15:00.000Z"
+    },
+    {
+      "id": 27,
+      "studentId": 19,
+      "amount": 400,
+      "lessonsPurchased": 6,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 24",
+      "createdAt": "2026-03-23T07:15:00.000Z"
+    },
+    {
+      "id": 28,
+      "studentId": 1,
+      "amount": 120,
+      "lessonsPurchased": 1,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 25",
+      "createdAt": "2026-03-28T07:15:00.000Z"
+    },
+    {
+      "id": 29,
+      "studentId": 15,
+      "amount": 140,
+      "lessonsPurchased": 2,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 26",
+      "createdAt": "2026-03-02T07:15:00.000Z"
+    },
+    {
+      "id": 30,
+      "studentId": 9,
+      "amount": 150,
+      "lessonsPurchased": 3,
+      "method": "Card",
+      "note": "Seeded payment for month booking 27",
+      "createdAt": "2026-03-07T07:15:00.000Z"
+    },
+    {
+      "id": 31,
+      "studentId": 3,
+      "amount": 175,
+      "lessonsPurchased": 4,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 28",
+      "createdAt": "2026-03-12T07:15:00.000Z"
+    },
+    {
+      "id": 32,
+      "studentId": 6,
+      "amount": 200,
+      "lessonsPurchased": 5,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 29",
+      "createdAt": "2026-03-17T07:15:00.000Z"
+    },
+    {
+      "id": 33,
+      "studentId": 17,
+      "amount": 220,
+      "lessonsPurchased": 6,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 30",
+      "createdAt": "2026-03-22T07:15:00.000Z"
+    },
+    {
+      "id": 34,
+      "studentId": 1,
+      "amount": 240,
+      "lessonsPurchased": 1,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 31",
+      "createdAt": "2026-03-27T07:15:00.000Z"
+    },
+    {
+      "id": 35,
+      "studentId": 13,
+      "amount": 260,
+      "lessonsPurchased": 2,
+      "method": "Card",
+      "note": "Seeded payment for month booking 32",
+      "createdAt": "2026-03-01T07:15:00.000Z"
+    },
+    {
+      "id": 36,
+      "studentId": 9,
+      "amount": 300,
+      "lessonsPurchased": 3,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 33",
+      "createdAt": "2026-03-06T07:15:00.000Z"
+    },
+    {
+      "id": 37,
+      "studentId": 19,
+      "amount": 320,
+      "lessonsPurchased": 4,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 34",
+      "createdAt": "2026-03-11T07:15:00.000Z"
+    },
+    {
+      "id": 38,
+      "studentId": 6,
+      "amount": 360,
+      "lessonsPurchased": 5,
+      "method": "Google Pay",
+      "note": "Seeded payment for month booking 35",
+      "createdAt": "2026-03-16T07:15:00.000Z"
+    },
+    {
+      "id": 39,
+      "studentId": 15,
+      "amount": 400,
+      "lessonsPurchased": 6,
+      "method": "Cash",
+      "note": "Seeded payment for month booking 36",
+      "createdAt": "2026-03-21T07:15:00.000Z"
+    },
+    {
+      "id": 40,
+      "studentId": 1,
+      "amount": 120,
+      "lessonsPurchased": 1,
+      "method": "Card",
+      "note": "Seeded payment for month booking 37",
+      "createdAt": "2026-03-26T07:15:00.000Z"
+    },
+    {
+      "id": 41,
+      "studentId": 3,
+      "amount": 140,
+      "lessonsPurchased": 2,
+      "method": "Bank Transfer",
+      "note": "Seeded payment for month booking 38",
+      "createdAt": "2026-03-31T07:15:00.000Z"
+    },
+    {
+      "id": 42,
+      "studentId": 9,
+      "amount": 150,
+      "lessonsPurchased": 3,
+      "method": "Apple Pay",
+      "note": "Seeded payment for month booking 39",
+      "createdAt": "2026-03-05T07:15:00.000Z"
     }
   ]
 }
