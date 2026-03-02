@@ -490,6 +490,7 @@ async function handleRequest(req, res) {
       return {
         ...booking,
         studentName: student ? student.name : 'Unknown student',
+        studentEmail: student ? student.email || '' : '',
         studentContactNo: student ? student.contactNo || '' : '',
         serviceName: service ? service.name : 'Unknown lesson',
         studentAgeGroup: student ? student.ageGroup : 'unknown',
@@ -534,7 +535,9 @@ async function handleRequest(req, res) {
       const student = db.students.find((item) => item.id === payment.studentId);
       return {
         ...payment,
-        studentName: student ? student.name : 'Unknown student'
+        studentName: student ? student.name : 'Unknown student',
+        studentEmail: student ? student.email || '' : '',
+        studentContactNo: student ? student.contactNo || '' : ''
       };
     });
 

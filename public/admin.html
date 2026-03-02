@@ -23,7 +23,18 @@
       </div>
     </header>
 
-    <section class="card">
+    <nav class="quick-menu" aria-label="Admin sections">
+      <a href="#section-add-student">Add Student</a>
+      <a href="#section-record-payment">Record Payment</a>
+      <a href="#section-create-slot">Create Slot</a>
+      <a href="#section-student-totals">Student Totals</a>
+      <a href="#section-booking-chart">Booking Chart</a>
+      <a href="#section-all-bookings">All Bookings</a>
+      <a href="#finance-section">Finance</a>
+      <a href="#section-all-slots">All Slots</a>
+    </nav>
+
+    <section class="card" id="section-add-student">
       <h2>Add Student</h2>
       <form id="student-form">
         <label>
@@ -51,7 +62,7 @@
       <p id="student-message" class="message"></p>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-record-payment">
       <h2>Record Payment</h2>
       <form id="payment-form">
         <label>
@@ -77,7 +88,7 @@
       <p id="payment-message" class="message"></p>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-create-slot">
       <h2>Create Lesson Slot</h2>
       <form id="slot-form">
         <label>
@@ -99,12 +110,12 @@
       <p id="slot-message" class="message"></p>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-student-totals">
       <h2>Student Totals</h2>
       <ul id="student-totals-list" class="list"></ul>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-booking-chart">
       <h2>Booking Chart</h2>
       <div class="chart-controls">
         <button type="button" id="weekdays-chart-btn" class="secondary-btn chart-btn-active">Weekdays Chart</button>
@@ -117,7 +128,7 @@
       <div id="booking-chart-grid" class="booking-chart-grid"></div>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-all-bookings">
       <h2>All Bookings</h2>
       <ul id="admin-bookings-list" class="list"></ul>
     </section>
@@ -145,15 +156,22 @@
           <p id="daily-lesson-value" class="summary-value">0</p>
         </article>
       </div>
+      <div class="finance-highlights">
+        <article class="daily-lesson-card">
+          <h3>Daily Lessons</h3>
+          <p class="daily-lesson-caption">Today booked lessons</p>
+          <ul id="daily-lesson-list" class="finance-mini-list"></ul>
+        </article>
+      </div>
       <ul id="admin-payments-list" class="list"></ul>
     </section>
 
-    <section class="card">
+    <section class="card" id="section-all-slots">
       <h2>All Slots</h2>
       <ul id="admin-slots-list" class="list"></ul>
     </section>
   </main>
-  <footer class="site-footer">Copyright © 2026 Tennis Book App. Eng AA Tech.</footer>
+  <footer class="site-footer">Copyright © 2026 Tennis Book App. Arbab Ali Tech.</footer>
 
   <script src="/pwa.js"></script>
   <script src="/admin.js"></script>

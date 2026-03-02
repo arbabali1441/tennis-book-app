@@ -17,6 +17,7 @@ const totalPaymentValue = document.getElementById('total-payment-value');
 const dailySaleValue = document.getElementById('daily-sale-value');
 const monthlySaleValue = document.getElementById('monthly-sale-value');
 const dailyLessonValue = document.getElementById('daily-lesson-value');
+const dailyLessonList = document.getElementById('daily-lesson-list');
 const logoutBtn = document.getElementById('logout-btn');
 const weekdaysChartBtn = document.getElementById('weekdays-chart-btn');
 const fullWeekChartBtn = document.getElementById('full-week-chart-btn');
@@ -59,6 +60,43 @@ function countDailyLessons(bookings) {
     }
     return toDateKey(start) === today;
   }).length;
+}
+
+function getTodayBookings(bookings) {
+  const today = toDateKey(new Date());
+  return bookings
+    .filter((booking) => {
+      if (!booking.slotStart) {
+        return false;
+      }
+      const start = new Date(booking.slotStart);
+      if (Number.isNaN(start.getTime())) {
+        return false;
+      }
+      return toDateKey(start) === today;
+    })
+    .sort((a, b) => new Date(a.slotStart).getTime() - new Date(b.slotStart).getTime());
+}
+
+function renderDailyLessons(bookings) {
+  dailyLessonList.innerHTML = '';
+  const todayBookings = getTodayBookings(bookings);
+
+  if (todayBookings.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = 'No lessons booked today.';
+    dailyLessonList.appendChild(empty);
+    return;
+  }
+
+  for (const booking of todayBookings) {
+    const li = document.createElement('li');
+    li.textContent = `${new Date(booking.slotStart).toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit'
+    })} - ${booking.studentName} (${booking.serviceName})`;
+    dailyLessonList.appendChild(li);
+  }
 }
 
 function toDateKey(date) {
@@ -347,11 +385,11 @@ async function fetchStudentSummaries() {
   for (const student of summaries) {
     const li = document.createElement('li');
     const text = document.createElement('span');
-    text.textContent = `${student.name} (${student.ageGroup}) ${student.contactNo ? '| Contact: ' + student.contactNo : ''} | Paid: AED ${student.totalPaid.toFixed(
-      2
-    )} | Purchased: ${student.totalLessonsPurchased} | Booked: ${student.totalLessonsBooked} | Remaining: ${
-      student.lessonsRemaining
-    }`;
+    text.textContent = `${student.name} (${student.ageGroup}) | Email: ${student.email || 'N/A'} | Contact: ${
+      student.contactNo || 'N/A'
+    } | Paid: AED ${student.totalPaid.toFixed(2)} | Purchased: ${student.totalLessonsPurchased} | Booked: ${
+      student.totalLessonsBooked
+    } | Remaining: ${student.lessonsRemaining}`;
     li.appendChild(text);
 
     const deleteBtn = document.createElement('button');
@@ -381,18 +419,20 @@ async function fetchBookings() {
     empty.textContent = 'No bookings yet.';
     bookingsList.appendChild(empty);
     dailyLessonValue.textContent = '0';
+    renderDailyLessons([]);
     renderBookingChart();
     return;
   }
 
   dailyLessonValue.textContent = String(countDailyLessons(bookings));
+  renderDailyLessons(bookings);
 
   for (const booking of bookings.slice().reverse()) {
     const li = document.createElement('li');
     const text = document.createElement('span');
-    text.textContent = `${booking.studentName} (${booking.studentAgeGroup}) ${booking.studentContactNo ? '- ' + booking.studentContactNo : ''} booked ${booking.serviceName} at ${formatDate(
-      booking.slotStart
-    )}`;
+    text.textContent = `${booking.studentName} (${booking.studentAgeGroup}) | Email: ${booking.studentEmail || 'N/A'} | Contact: ${
+      booking.studentContactNo || 'N/A'
+    } | Booked: ${booking.serviceName} at ${formatDate(booking.slotStart)}`;
     li.appendChild(text);
 
     const cancelBtn = document.createElement('button');
@@ -427,9 +467,9 @@ async function fetchPayments() {
 
   for (const payment of payments.slice().reverse()) {
     const li = document.createElement('li');
-    li.textContent = `${payment.studentName} paid AED ${payment.amount.toFixed(2)} for ${payment.lessonsPurchased} lessons on ${formatDate(
-      payment.createdAt
-    )}`;
+    li.textContent = `${payment.studentName} | Email: ${payment.studentEmail || 'N/A'} | Contact: ${
+      payment.studentContactNo || 'N/A'
+    } | Paid: AED ${payment.amount.toFixed(2)} for ${payment.lessonsPurchased} lessons on ${formatDate(payment.createdAt)}`;
     paymentsList.appendChild(li);
   }
 }
@@ -488,7 +528,13 @@ async function fetchSlots() {
     } else {
       const booked = document.createElement('span');
       booked.className = 'slot-status-booked';
-      booked.textContent = 'Booked ✓';
+      const label = document.createElement('span');
+      label.textContent = 'Booked';
+      const icon = document.createElement('span');
+      icon.className = 'slot-booked-icon';
+      icon.textContent = '✓';
+      booked.appendChild(label);
+      booked.appendChild(icon);
       li.appendChild(booked);
     }
 
