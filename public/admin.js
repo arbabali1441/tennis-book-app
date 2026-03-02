@@ -17,6 +17,19 @@ const totalPaymentValue = document.getElementById('total-payment-value');
 const dailySaleValue = document.getElementById('daily-sale-value');
 const monthlySaleValue = document.getElementById('monthly-sale-value');
 const logoutBtn = document.getElementById('logout-btn');
+const weekdaysChartBtn = document.getElementById('weekdays-chart-btn');
+const fullWeekChartBtn = document.getElementById('full-week-chart-btn');
+const financeBtn = document.getElementById('finance-btn');
+const bookingChartCaption = document.getElementById('booking-chart-caption');
+const bookingChartGrid = document.getElementById('booking-chart-grid');
+const financeSection = document.getElementById('finance-section');
+
+const WEEKDAYS_ONLY = 'weekdays';
+const FULL_WEEK = 'full-week';
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+let chartMode = WEEKDAYS_ONLY;
+let bookingsCache = [];
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString();
@@ -28,6 +41,166 @@ function toIsoString(localDatetime) {
 
 function formatCurrency(value) {
   return `AED ${Number(value || 0).toFixed(2)}`;
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatSlotHour(hour) {
+  const amPm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:00 ${amPm}`;
+}
+
+function getCurrentMonday() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  const diff = (monday.getDay() + 6) % 7;
+  monday.setDate(monday.getDate() - diff);
+  return monday;
+}
+
+function getChartDays(mode) {
+  const monday = getCurrentMonday();
+  const dayRules = [
+    { index: 1, startHour: 17, endHour: 22 },
+    { index: 2, startHour: 17, endHour: 22 },
+    { index: 3, startHour: 17, endHour: 22 },
+    { index: 4, startHour: 17, endHour: 22 },
+    { index: 5, startHour: 17, endHour: 22 }
+  ];
+
+  if (mode === FULL_WEEK) {
+    dayRules.push({ index: 6, startHour: 18, endHour: 22 });
+    dayRules.push({ index: 0, startHour: 18, endHour: 22 });
+  }
+
+  return dayRules.map((rule) => {
+    const date = new Date(monday);
+    const offset = rule.index === 0 ? 6 : rule.index - 1;
+    date.setDate(monday.getDate() + offset);
+    return {
+      ...rule,
+      date,
+      dayName: WEEKDAY_NAMES[rule.index],
+      dateKey: toDateKey(date)
+    };
+  });
+}
+
+function getChartButtonClass(isActive) {
+  return isActive ? 'secondary-btn chart-btn-active' : 'secondary-btn';
+}
+
+function setChartMode(nextMode) {
+  chartMode = nextMode;
+  weekdaysChartBtn.className = getChartButtonClass(chartMode === WEEKDAYS_ONLY);
+  fullWeekChartBtn.className = getChartButtonClass(chartMode === FULL_WEEK);
+  renderBookingChart();
+}
+
+function createBookingMap(bookings) {
+  const map = new Map();
+  for (const booking of bookings) {
+    if (!booking.slotStart) {
+      continue;
+    }
+    const start = new Date(booking.slotStart);
+    if (Number.isNaN(start.getTime())) {
+      continue;
+    }
+    const key = `${toDateKey(start)}-${start.getHours()}`;
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
+    map.get(key).push(booking);
+  }
+  return map;
+}
+
+function renderBookingChart() {
+  const chartDays = getChartDays(chartMode);
+  const monday = getCurrentMonday();
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const weekBookings = bookingsCache.filter((booking) => {
+    if (!booking.slotStart) {
+      return false;
+    }
+    const slotStart = new Date(booking.slotStart);
+    return slotStart >= monday && slotStart <= sunday;
+  });
+
+  const bookingMap = createBookingMap(weekBookings);
+  bookingChartGrid.innerHTML = '';
+
+  bookingChartCaption.textContent =
+    chartMode === FULL_WEEK
+      ? 'Full week chart: Monday-Friday 5:00 PM to 10:00 PM, Saturday-Sunday 6:00 PM to 10:00 PM'
+      : 'Weekdays chart: Monday-Friday 5:00 PM to 10:00 PM';
+
+  for (const day of chartDays) {
+    const dayColumn = document.createElement('article');
+    dayColumn.className = 'chart-day-column';
+
+    const dayHeader = document.createElement('h3');
+    dayHeader.className = 'chart-day-title';
+    dayHeader.textContent = `${day.dayName} ${day.date.toLocaleDateString()}`;
+    dayColumn.appendChild(dayHeader);
+
+    for (let hour = day.startHour; hour < day.endHour; hour += 1) {
+      const slotRow = document.createElement('div');
+      slotRow.className = 'chart-slot-row';
+
+      const time = document.createElement('p');
+      time.className = 'chart-slot-time';
+      time.textContent = formatSlotHour(hour);
+      slotRow.appendChild(time);
+
+      const bookingsCell = document.createElement('div');
+      bookingsCell.className = 'chart-slot-bookings';
+
+      const key = `${day.dateKey}-${hour}`;
+      const slotBookings = bookingMap.get(key) || [];
+
+      if (slotBookings.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'chart-no-booking';
+        empty.textContent = 'No booking';
+        bookingsCell.appendChild(empty);
+      } else {
+        for (const booking of slotBookings) {
+          const item = document.createElement('p');
+          item.className = 'chart-booking-item';
+          item.textContent = `${booking.studentName} - ${booking.serviceName}`;
+          bookingsCell.appendChild(item);
+        }
+      }
+
+      slotRow.appendChild(bookingsCell);
+      dayColumn.appendChild(slotRow);
+    }
+
+    bookingChartGrid.appendChild(dayColumn);
+  }
+}
+
+async function openFinanceSection() {
+  financeBtn.disabled = true;
+  try {
+    await fetchPayments();
+    await fetchPaymentsSummary();
+    financeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } finally {
+    financeBtn.disabled = false;
+  }
 }
 
 async function requireAdminSession() {
@@ -114,12 +287,14 @@ async function fetchBookings() {
   }
 
   const bookings = await response.json();
+  bookingsCache = bookings;
   bookingsList.innerHTML = '';
 
   if (bookings.length === 0) {
     const empty = document.createElement('li');
     empty.textContent = 'No bookings yet.';
     bookingsList.appendChild(empty);
+    renderBookingChart();
     return;
   }
 
@@ -140,6 +315,8 @@ async function fetchBookings() {
     li.appendChild(cancelBtn);
     bookingsList.appendChild(li);
   }
+
+  renderBookingChart();
 }
 
 async function fetchPayments() {
@@ -445,6 +622,18 @@ slotForm.addEventListener('submit', async (event) => {
 logoutBtn.addEventListener('click', async () => {
   await fetch('/api/auth/logout', { method: 'POST' });
   window.location.href = '/login';
+});
+
+weekdaysChartBtn.addEventListener('click', () => {
+  setChartMode(WEEKDAYS_ONLY);
+});
+
+fullWeekChartBtn.addEventListener('click', () => {
+  setChartMode(FULL_WEEK);
+});
+
+financeBtn.addEventListener('click', async () => {
+  await openFinanceSection();
 });
 
 (async function init() {

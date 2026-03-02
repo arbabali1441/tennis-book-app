@@ -105,11 +105,22 @@
     </section>
 
     <section class="card">
+      <h2>Booking Chart</h2>
+      <div class="chart-controls">
+        <button type="button" id="weekdays-chart-btn" class="secondary-btn chart-btn-active">Weekdays Chart</button>
+        <button type="button" id="full-week-chart-btn" class="secondary-btn">Full Week Chart</button>
+        <button type="button" id="finance-btn" class="secondary-btn">Finance</button>
+      </div>
+      <p id="booking-chart-caption" class="chart-caption"></p>
+      <div id="booking-chart-grid" class="booking-chart-grid"></div>
+    </section>
+
+    <section class="card">
       <h2>All Bookings</h2>
       <ul id="admin-bookings-list" class="list"></ul>
     </section>
 
-    <section class="card">
+    <section class="card" id="finance-section">
       <h2>All Payments</h2>
       <div id="payments-summary" class="summary-grid">
         <article class="summary-stat">
