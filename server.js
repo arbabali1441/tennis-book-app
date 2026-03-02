@@ -254,8 +254,9 @@ function validateBooking(payload) {
   const missing = required.filter((field) => !payload[field]);
   const hasStudentId = Boolean(payload.studentId);
   const hasStudentEmail = Boolean(payload.studentEmail);
-  if (!hasStudentId && !hasStudentEmail) {
-    missing.push('studentId or studentEmail');
+  const hasContactNo = Boolean(payload.contactNo);
+  if (!hasStudentId && !hasStudentEmail && !hasContactNo) {
+    missing.push('studentId or studentEmail or contactNo');
   }
   if (missing.length > 0) {
     return `Missing fields: ${missing.join(', ')}`;
@@ -266,6 +267,13 @@ function validateBooking(payload) {
 
 function isValidContactNo(value) {
   return /^[0-9+()\-\s]{7,20}$/.test(value);
+}
+
+function normalizeContactNo(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[()\-\s]/g, '');
 }
 
 function isWhatsAppEnabled() {
@@ -338,6 +346,51 @@ function bookingReminderMessage(student, service, slot, bookingId) {
     `Lesson: ${service.name}`,
     `Start: ${formatLessonDate(slot.start)} (${APP_TIMEZONE})`
   ].join('\n');
+}
+
+function findStudentByContactNo(db, contactNo) {
+  const normalized = normalizeContactNo(contactNo);
+  if (!normalized) {
+    return null;
+  }
+  return db.students.find((item) => normalizeContactNo(item.contactNo) === normalized) || null;
+}
+
+function toTrackableBooking(db, booking) {
+  const student = db.students.find((item) => item.id === booking.studentId);
+  const service = db.services.find((item) => item.id === booking.serviceId);
+  const slot = db.slots.find((item) => item.id === booking.slotId);
+  return {
+    id: booking.id,
+    notes: booking.notes || '',
+    createdAt: booking.createdAt,
+    serviceName: service ? service.name : 'Unknown lesson',
+    slotStart: slot ? slot.start : null,
+    slotEnd: slot ? slot.end : null,
+    studentName: student ? student.name : 'Unknown student',
+    studentContactNo: student ? student.contactNo || '' : ''
+  };
+}
+
+function findSlotByServiceAndTime(db, serviceId, slotTimeIso) {
+  const requestedTimeMs = Date.parse(slotTimeIso);
+  if (Number.isNaN(requestedTimeMs)) {
+    return null;
+  }
+
+  const ONE_MINUTE_MS = 60 * 1000;
+  return (
+    db.slots.find((slot) => {
+      if (slot.serviceId !== serviceId) {
+        return false;
+      }
+      const slotStartMs = Date.parse(slot.start);
+      if (Number.isNaN(slotStartMs)) {
+        return false;
+      }
+      return Math.abs(slotStartMs - requestedTimeMs) < ONE_MINUTE_MS;
+    }) || null
+  );
 }
 
 async function processDueReminders() {
@@ -477,6 +530,44 @@ async function handleRequest(req, res) {
     return sendJson(res, 200, slots.filter((slot) => slot.available));
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/slots/check') {
+    const db = readDb();
+    const serviceId = Number(url.searchParams.get('serviceId'));
+    const slotTime = String(url.searchParams.get('slotTime') || '').trim();
+
+    if (Number.isNaN(serviceId) || serviceId <= 0) {
+      return sendJson(res, 400, { error: 'Missing or invalid serviceId' });
+    }
+    if (!slotTime) {
+      return sendJson(res, 400, { error: 'Missing slotTime' });
+    }
+    if (Number.isNaN(Date.parse(slotTime))) {
+      return sendJson(res, 400, { error: 'Invalid slotTime format' });
+    }
+
+    const slot = findSlotByServiceAndTime(db, serviceId, slotTime);
+    if (!slot) {
+      return sendJson(res, 200, {
+        found: false,
+        available: false,
+        message: 'No slot found at this time for the selected lesson type.'
+      });
+    }
+
+    const alreadyBooked = db.bookings.some((item) => item.slotId === slot.id);
+    const isAvailable = Boolean(slot.available) && !alreadyBooked;
+    return sendJson(res, 200, {
+      found: true,
+      available: isAvailable,
+      slot: {
+        id: slot.id,
+        start: slot.start,
+        end: slot.end
+      },
+      message: isAvailable ? 'Slot is available.' : 'Slot is already booked.'
+    });
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/bookings') {
     if (!requireAdmin(req, res)) {
       return;
@@ -499,6 +590,32 @@ async function handleRequest(req, res) {
       };
     });
     return sendJson(res, 200, detailedBookings);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/bookings/track') {
+    const contactNo = String(url.searchParams.get('contactNo') || '').trim();
+    if (!contactNo) {
+      return sendJson(res, 400, { error: 'Missing contactNo' });
+    }
+    if (!isValidContactNo(contactNo)) {
+      return sendJson(res, 400, { error: 'Invalid contact number format' });
+    }
+
+    const db = readDb();
+    const student = findStudentByContactNo(db, contactNo);
+    if (!student) {
+      return sendJson(res, 200, []);
+    }
+
+    const tracked = db.bookings
+      .filter((item) => item.studentId === student.id)
+      .map((item) => toTrackableBooking(db, item))
+      .sort((a, b) => {
+        const aTime = a.slotStart ? Date.parse(a.slotStart) : 0;
+        const bTime = b.slotStart ? Date.parse(b.slotStart) : 0;
+        return bTime - aTime;
+      });
+    return sendJson(res, 200, tracked);
   }
 
   const deleteBookingMatch = req.method === 'DELETE' ? url.pathname.match(/^\/api\/bookings\/(\d+)$/) : null;
@@ -601,17 +718,56 @@ async function handleRequest(req, res) {
       const studentEmail = String(payload.studentEmail || '')
         .trim()
         .toLowerCase();
+      const studentName = String(payload.studentName || '').trim();
+      const contactNo = String(payload.contactNo || '').trim();
+      const ageGroupRaw = String(payload.ageGroup || '').trim().toLowerCase();
+
+      if (contactNo && !isValidContactNo(contactNo)) {
+        return sendJson(res, 400, { error: 'Invalid contact number format' });
+      }
 
       let student = null;
+      let createdNewStudent = false;
       if (!Number.isNaN(studentId) && studentId > 0) {
         student = db.students.find((item) => item.id === studentId);
       } else if (studentEmail) {
         student = db.students.find((item) => item.email === studentEmail);
       }
+      if (!student && contactNo) {
+        student = findStudentByContactNo(db, contactNo);
+      }
 
       if (!student) {
-        return sendJson(res, 404, { error: 'Student account not found. Please contact admin.' });
+        if (!studentName || !contactNo) {
+          return sendJson(res, 404, {
+            error: 'Student account not found. For a new client, add name and contact number.'
+          });
+        }
+
+        let email = studentEmail;
+        if (!email || !email.includes('@') || db.students.some((item) => item.email === email)) {
+          const randomPart = crypto.randomBytes(4).toString('hex');
+          email = `guest-${Date.now()}-${randomPart}@local.booking`;
+        }
+
+        const ageGroup = ['kids', 'adults'].includes(ageGroupRaw) ? ageGroupRaw : 'adults';
+        student = {
+          id: nextId(db.students),
+          name: studentName,
+          email,
+          contactNo,
+          ageGroup,
+          createdAt: new Date().toISOString()
+        };
+        db.students.push(student);
+        createdNewStudent = true;
       }
+
+      if (contactNo && !student.contactNo) {
+        student.contactNo = contactNo;
+      }
+
+      const resolvedStudentId = student.id;
 
       const service = db.services.find((item) => item.id === serviceId);
       if (!service) {
@@ -631,14 +787,14 @@ async function handleRequest(req, res) {
         return sendJson(res, 409, { error: 'Slot already booked' });
       }
 
-      const summary = calculateStudentSummary(db, studentId);
-      if (summary.lessonsRemaining <= 0) {
+      const summary = calculateStudentSummary(db, resolvedStudentId);
+      if (!createdNewStudent && summary.lessonsRemaining <= 0) {
         return sendJson(res, 409, { error: 'Student has no remaining paid lessons' });
       }
 
       const booking = {
         id: nextId(db.bookings),
-        studentId,
+        studentId: resolvedStudentId,
         serviceId,
         slotId,
         notes: payload.notes ? String(payload.notes).trim() : '',
@@ -662,7 +818,7 @@ async function handleRequest(req, res) {
         ...booking,
         studentName: student.name,
         serviceName: service.name,
-        summary: calculateStudentSummary(db, studentId)
+        summary: calculateStudentSummary(db, resolvedStudentId)
       });
     } catch (err) {
       return sendJson(res, 400, { error: err.message });

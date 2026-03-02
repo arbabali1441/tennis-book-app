@@ -16,7 +16,7 @@
   <main class="container">
     <header class="hero">
       <h1>Tennis Lesson Booking</h1>
-      <p>Book private, semi-private, or group lessons for kids and adults.</p>
+      <p>Book private, semi-private, or group lessons for kids and adults. New clients can book using contact details.</p>
       <div class="hero-actions">
         <button type="button" id="install-app-btn" class="admin-link install-btn" hidden>Install App</button>
         <a class="admin-link" href="/login">Admin Login</a>
@@ -27,8 +27,27 @@
       <h2>Book a Lesson</h2>
       <form id="booking-form">
         <label>
-          Student Email
-          <input type="email" name="studentEmail" id="student-email" placeholder="you@example.com" required />
+          Client Name (for new client)
+          <input type="text" name="studentName" id="student-name" placeholder="Full name" />
+        </label>
+
+        <label>
+          Contact Number
+          <input type="text" name="contactNo" id="contact-no" placeholder="+971501234567" required />
+        </label>
+
+        <label>
+          Student Email (optional)
+          <input type="email" name="studentEmail" id="student-email" placeholder="you@example.com" />
+        </label>
+
+        <label>
+          Age Group (new client only)
+          <select name="ageGroup" id="age-group">
+            <option value="">Select age group</option>
+            <option value="kids">Kids</option>
+            <option value="adults">Adults</option>
+          </select>
         </label>
 
         <label>
@@ -46,13 +65,34 @@
         </label>
 
         <label>
+          Type Slot Date & Time to Check
+          <input type="datetime-local" id="slot-time-input" />
+        </label>
+        <button type="button" id="check-slot-btn" class="secondary-btn">Check Availability</button>
+        <p id="slot-check-message" class="message"></p>
+
+        <label>
           Notes (optional)
           <textarea name="notes" rows="3" placeholder="Lesson goals or requests"></textarea>
         </label>
 
         <button type="submit">Confirm Lesson</button>
       </form>
+      <p class="inline-note">When a lesson is booked, admin receives a WhatsApp booking alert.</p>
       <p id="form-message" class="message"></p>
+    </section>
+
+    <section class="card">
+      <h2>Track Your Booking</h2>
+      <form id="track-form">
+        <label>
+          Contact Number
+          <input type="text" name="contactNo" id="track-contact-no" placeholder="+971501234567" required />
+        </label>
+        <button type="submit">Track Booking</button>
+      </form>
+      <p id="track-message" class="message"></p>
+      <ul id="track-results" class="list"></ul>
     </section>
   </main>
   <footer class="site-footer">Copyright © 2026 Tennis Book App. Arbab Ali Tech.</footer>

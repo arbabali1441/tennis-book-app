@@ -10,6 +10,7 @@ const paymentMessage = document.getElementById('payment-message');
 const slotMessage = document.getElementById('slot-message');
 
 const studentTotalsList = document.getElementById('student-totals-list');
+const studentContactsList = document.getElementById('student-contacts-list');
 const bookingsList = document.getElementById('admin-bookings-list');
 const paymentsList = document.getElementById('admin-payments-list');
 const slotsList = document.getElementById('admin-slots-list');
@@ -341,14 +342,32 @@ async function requireAdminSession() {
 
 async function fetchStudentsAndFillSelects() {
   const response = await fetch('/api/students');
+  if (response.status === 401) {
+    window.location.href = '/login';
+    return;
+  }
   const students = await response.json();
 
   paymentStudentSelect.innerHTML = '<option value="">Select student</option>';
+  studentContactsList.innerHTML = '';
+
+  if (students.length === 0) {
+    const empty = document.createElement('li');
+    empty.textContent = 'No students yet.';
+    studentContactsList.appendChild(empty);
+  }
+
   for (const student of students) {
     const option = document.createElement('option');
     option.value = student.id;
     option.textContent = `${student.name} (${student.ageGroup}) ${student.contactNo ? '- ' + student.contactNo : ''}`;
     paymentStudentSelect.appendChild(option);
+
+    const contactItem = document.createElement('li');
+    contactItem.textContent = `${student.name} (${student.ageGroup}) | Email: ${student.email || 'N/A'} | Contact: ${
+      student.contactNo || 'N/A'
+    }`;
+    studentContactsList.appendChild(contactItem);
   }
 }
 

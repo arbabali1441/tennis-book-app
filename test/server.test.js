@@ -133,6 +133,97 @@ test('public booking flow creates booking and consumes slot', async () => {
   }
 });
 
+test('new client can book with contact number and is auto-created as student', async () => {
+  const { tempDir, tempDbPath } = copyFixtureDb();
+  try {
+    const handler = loadHandlerWithDb(tempDbPath);
+    const dbBefore = JSON.parse(fs.readFileSync(tempDbPath, 'utf8'));
+    const studentCountBefore = dbBefore.students.length;
+
+    const createResponse = await invoke(handler, {
+      method: 'POST',
+      url: '/api/bookings',
+      headers: { 'content-type': 'application/json' },
+      body: {
+        studentName: 'New Walk-in Client',
+        contactNo: '+971500000001',
+        ageGroup: 'adults',
+        serviceId: 1,
+        slotId: 5
+      }
+    });
+
+    assert.equal(createResponse.statusCode, 201);
+    assert.equal(createResponse.json.studentName, 'New Walk-in Client');
+
+    const dbAfter = JSON.parse(fs.readFileSync(tempDbPath, 'utf8'));
+    assert.equal(dbAfter.students.length, studentCountBefore + 1);
+    assert.equal(
+      dbAfter.students.some((item) => item.name === 'New Walk-in Client' && item.contactNo === '+971500000001'),
+      true
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('public track endpoint returns bookings by contact number', async () => {
+  const { tempDir, tempDbPath } = copyFixtureDb();
+  try {
+    const db = JSON.parse(fs.readFileSync(tempDbPath, 'utf8'));
+    db.students[0].contactNo = '+971501111111';
+    fs.writeFileSync(tempDbPath, JSON.stringify(db, null, 2), 'utf8');
+
+    const handler = loadHandlerWithDb(tempDbPath);
+
+    const trackResponse = await invoke(handler, {
+      method: 'GET',
+      url: '/api/bookings/track?contactNo=%2B971501111111'
+    });
+    assert.equal(trackResponse.statusCode, 200);
+    assert.equal(Array.isArray(trackResponse.json), true);
+    assert.equal(trackResponse.json.length > 0, true);
+    assert.equal(trackResponse.json[0].studentContactNo, '+971501111111');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('public slot checker validates typed time availability', async () => {
+  const { tempDir, tempDbPath } = copyFixtureDb();
+  try {
+    const handler = loadHandlerWithDb(tempDbPath);
+
+    const availableResponse = await invoke(handler, {
+      method: 'GET',
+      url: '/api/slots/check?serviceId=1&slotTime=2026-03-04T10:07:00.000Z'
+    });
+    assert.equal(availableResponse.statusCode, 200);
+    assert.equal(availableResponse.json.found, true);
+    assert.equal(availableResponse.json.available, true);
+    assert.equal(availableResponse.json.slot.id, 5);
+
+    const bookedResponse = await invoke(handler, {
+      method: 'GET',
+      url: '/api/slots/check?serviceId=1&slotTime=2026-03-03T15:00:00.000Z'
+    });
+    assert.equal(bookedResponse.statusCode, 200);
+    assert.equal(bookedResponse.json.found, true);
+    assert.equal(bookedResponse.json.available, false);
+    assert.equal(bookedResponse.json.slot.id, 1);
+
+    const missingResponse = await invoke(handler, {
+      method: 'GET',
+      url: '/api/slots/check?serviceId=1&slotTime=2026-03-07T10:07:00.000Z'
+    });
+    assert.equal(missingResponse.statusCode, 200);
+    assert.equal(missingResponse.json.found, false);
+    assert.equal(missingResponse.json.available, false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('admin auth guards protected routes and allows access after login', async () => {
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {

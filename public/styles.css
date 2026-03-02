@@ -247,6 +247,13 @@ form button[type="submit"]:hover {
   font-weight: 700;
 }
 
+.inline-note {
+  margin: 10px 0 0;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .summary-box {
   background: linear-gradient(145deg, #ffffff 0%, #effef4 100%);
   border: 1px dashed rgba(15, 23, 42, 0.24);
