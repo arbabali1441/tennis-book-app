@@ -122,9 +122,12 @@
       <ul id="admin-bookings-list" class="list"></ul>
     </section>
 
-    <section class="card" id="finance-section">
-      <h2>All Payments</h2>
-      <div id="payments-summary" class="summary-grid">
+    <section class="card finance-card" id="finance-section">
+      <div class="finance-header">
+        <h2>Finance Dashboard</h2>
+        <p>Track revenue and daily lesson activity at a glance.</p>
+      </div>
+      <div id="payments-summary" class="summary-grid finance-summary-grid">
         <article class="summary-stat">
           <p class="summary-label">Total Payment</p>
           <p id="total-payment-value" class="summary-value">AED 0.00</p>
@@ -136,6 +139,10 @@
         <article class="summary-stat">
           <p class="summary-label">Monthly Sale</p>
           <p id="monthly-sale-value" class="summary-value">AED 0.00</p>
+        </article>
+        <article class="summary-stat">
+          <p class="summary-label">Daily Lesson</p>
+          <p id="daily-lesson-value" class="summary-value">0</p>
         </article>
       </div>
       <ul id="admin-payments-list" class="list"></ul>

@@ -16,6 +16,7 @@ const slotsList = document.getElementById('admin-slots-list');
 const totalPaymentValue = document.getElementById('total-payment-value');
 const dailySaleValue = document.getElementById('daily-sale-value');
 const monthlySaleValue = document.getElementById('monthly-sale-value');
+const dailyLessonValue = document.getElementById('daily-lesson-value');
 const logoutBtn = document.getElementById('logout-btn');
 const weekdaysChartBtn = document.getElementById('weekdays-chart-btn');
 const fullWeekChartBtn = document.getElementById('full-week-chart-btn');
@@ -44,6 +45,20 @@ function toIsoString(localDatetime) {
 
 function formatCurrency(value) {
   return `AED ${Number(value || 0).toFixed(2)}`;
+}
+
+function countDailyLessons(bookings) {
+  const today = toDateKey(new Date());
+  return bookings.filter((booking) => {
+    if (!booking.slotStart) {
+      return false;
+    }
+    const start = new Date(booking.slotStart);
+    if (Number.isNaN(start.getTime())) {
+      return false;
+    }
+    return toDateKey(start) === today;
+  }).length;
 }
 
 function toDateKey(date) {
@@ -365,9 +380,12 @@ async function fetchBookings() {
     const empty = document.createElement('li');
     empty.textContent = 'No bookings yet.';
     bookingsList.appendChild(empty);
+    dailyLessonValue.textContent = '0';
     renderBookingChart();
     return;
   }
+
+  dailyLessonValue.textContent = String(countDailyLessons(bookings));
 
   for (const booking of bookings.slice().reverse()) {
     const li = document.createElement('li');
@@ -456,9 +474,7 @@ async function fetchSlots() {
   for (const slot of slots) {
     const li = document.createElement('li');
     const text = document.createElement('span');
-    text.textContent = `Service #${slot.serviceId} | ${formatDate(slot.start)} - ${formatDate(slot.end)} | ${
-      slot.available ? 'available' : 'booked'
-    }`;
+    text.textContent = `Service #${slot.serviceId} | ${formatDate(slot.start)} - ${formatDate(slot.end)}`;
     li.appendChild(text);
 
     if (slot.available) {
@@ -470,10 +486,10 @@ async function fetchSlots() {
       deleteBtn.textContent = 'Delete';
       li.appendChild(deleteBtn);
     } else {
-      const locked = document.createElement('span');
-      locked.className = 'slot-locked';
-      locked.textContent = 'Locked';
-      li.appendChild(locked);
+      const booked = document.createElement('span');
+      booked.className = 'slot-status-booked';
+      booked.textContent = 'Booked ✓';
+      li.appendChild(booked);
     }
 
     slotsList.appendChild(li);
