@@ -10,6 +10,9 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const REMINDER_MINUTES_BEFORE = Number(process.env.REMINDER_MINUTES_BEFORE || 180);
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'Asia/Dubai';
+const ROLLING_SLOT_DAYS = Number(process.env.ROLLING_SLOT_DAYS || 30);
+const BOOKING_START_HOUR = Number(process.env.BOOKING_START_HOUR || 17);
+const BOOKING_END_HOUR = Number(process.env.BOOKING_END_HOUR || 22);
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM || '';
@@ -249,6 +252,172 @@ function calculatePaymentSummary(db) {
   return summary;
 }
 
+function slotKey(serviceId, startIso) {
+  return `${serviceId}|${startIso}`;
+}
+
+function getDatePartsInTimeZone(dateInput, timeZone) {
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const get = (type) => parts.find((item) => item.type === type)?.value;
+
+  const year = Number(get('year'));
+  const month = Number(get('month'));
+  const day = Number(get('day'));
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+function getTimeZoneOffsetMinutes(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'shortOffset',
+    hour: '2-digit'
+  }).formatToParts(date);
+  const tzName = parts.find((item) => item.type === 'timeZoneName')?.value || '';
+  const match = tzName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  if (!match) {
+    return 0;
+  }
+
+  const sign = match[1] === '-' ? -1 : 1;
+  const hours = Number(match[2] || 0);
+  const minutes = Number(match[3] || 0);
+  return sign * (hours * 60 + minutes);
+}
+
+function zonedDateTimeToUtcDate(year, month, day, hour, minute, timeZone) {
+  let utcTimestamp = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  for (let i = 0; i < 3; i += 1) {
+    const offsetMinutes = getTimeZoneOffsetMinutes(new Date(utcTimestamp), timeZone);
+    const adjustedTimestamp = Date.UTC(year, month - 1, day, hour, minute, 0, 0) - offsetMinutes * 60 * 1000;
+    if (adjustedTimestamp === utcTimestamp) {
+      break;
+    }
+    utcTimestamp = adjustedTimestamp;
+  }
+
+  return new Date(utcTimestamp);
+}
+
+function buildManagedRollingSlots(services, now = new Date()) {
+  const generated = [];
+  const durationLimits = {
+    startHour: BOOKING_START_HOUR,
+    endHour: BOOKING_END_HOUR
+  };
+
+  for (let dayOffset = 0; dayOffset < ROLLING_SLOT_DAYS; dayOffset += 1) {
+    const dayReference = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+    const parts = getDatePartsInTimeZone(dayReference, APP_TIMEZONE);
+    if (!parts) {
+      continue;
+    }
+
+    for (const service of services) {
+      const durationMinutes = Number(service.durationMinutes || 0);
+      if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
+        continue;
+      }
+
+      for (let hour = durationLimits.startHour; hour < durationLimits.endHour; hour += 1) {
+        if (hour * 60 + durationMinutes > durationLimits.endHour * 60) {
+          continue;
+        }
+
+        const startDate = zonedDateTimeToUtcDate(parts.year, parts.month, parts.day, hour, 0, APP_TIMEZONE);
+        const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+        generated.push({
+          serviceId: service.id,
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        });
+      }
+    }
+  }
+
+  return generated;
+}
+
+function syncManagedSlots(db, now = new Date()) {
+  const serviceList = db.services.filter((item) => Number(item.id) > 0);
+  const desired = buildManagedRollingSlots(serviceList, now);
+  const desiredKeys = new Set(desired.map((slot) => slotKey(slot.serviceId, slot.start)));
+  const bookedSlotIds = new Set(db.bookings.map((booking) => booking.slotId));
+  let changed = false;
+
+  db.slots = db.slots.filter((slot) => {
+    if (!slot.managed) {
+      return true;
+    }
+    const keep = desiredKeys.has(slotKey(slot.serviceId, slot.start)) || bookedSlotIds.has(slot.id);
+    if (!keep) {
+      changed = true;
+    }
+    return keep;
+  });
+
+  const existingByKey = new Map();
+  for (const slot of db.slots) {
+    existingByKey.set(slotKey(slot.serviceId, slot.start), slot);
+  }
+
+  let maxSlotId = db.slots.reduce((max, slot) => Math.max(max, Number(slot.id) || 0), 0);
+  for (const desiredSlot of desired) {
+    const key = slotKey(desiredSlot.serviceId, desiredSlot.start);
+    const existing = existingByKey.get(key);
+    if (existing) {
+      const shouldBeAvailable = !bookedSlotIds.has(existing.id);
+      if (
+        existing.end !== desiredSlot.end ||
+        existing.available !== shouldBeAvailable ||
+        existing.managed !== true
+      ) {
+        existing.end = desiredSlot.end;
+        existing.available = shouldBeAvailable;
+        existing.managed = true;
+        changed = true;
+      }
+      continue;
+    }
+
+    maxSlotId += 1;
+    db.slots.push({
+      id: maxSlotId,
+      serviceId: desiredSlot.serviceId,
+      start: desiredSlot.start,
+      end: desiredSlot.end,
+      available: true,
+      managed: true
+    });
+    changed = true;
+  }
+
+  return changed;
+}
+
+function isSlotInRollingWindow(slotStart, now = new Date()) {
+  const startMs = Date.parse(slotStart);
+  if (Number.isNaN(startMs)) {
+    return false;
+  }
+  const nowMs = now.getTime();
+  const endMs = nowMs + ROLLING_SLOT_DAYS * 24 * 60 * 60 * 1000;
+  return startMs >= nowMs && startMs < endMs;
+}
+
 function validateBooking(payload) {
   const required = ['serviceId', 'slotId'];
   const missing = required.filter((field) => !payload[field]);
@@ -381,6 +550,9 @@ function findSlotByServiceAndTime(db, serviceId, slotTimeIso) {
   const ONE_MINUTE_MS = 60 * 1000;
   return (
     db.slots.find((slot) => {
+      if (!slot.managed) {
+        return false;
+      }
       if (slot.serviceId !== serviceId) {
         return false;
       }
@@ -515,8 +687,14 @@ async function handleRequest(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/slots') {
     const db = readDb();
+    const updated = syncManagedSlots(db);
+    if (updated) {
+      writeDb(db);
+    }
     const serviceId = Number(url.searchParams.get('serviceId'));
     const includeAll = url.searchParams.get('includeAll') === 'true';
+    const now = new Date();
+    const bookedSlotIds = new Set(db.bookings.map((item) => item.slotId));
 
     let slots = Number.isNaN(serviceId) ? db.slots : db.slots.filter((slot) => slot.serviceId === serviceId);
 
@@ -527,11 +705,23 @@ async function handleRequest(req, res) {
       return sendJson(res, 200, slots);
     }
 
-    return sendJson(res, 200, slots.filter((slot) => slot.available));
+    slots = slots.filter(
+      (slot) =>
+        slot.managed === true &&
+        slot.available &&
+        !bookedSlotIds.has(slot.id) &&
+        isSlotInRollingWindow(slot.start, now)
+    );
+    slots.sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+    return sendJson(res, 200, slots);
   }
 
   if (req.method === 'GET' && url.pathname === '/api/slots/check') {
     const db = readDb();
+    const updated = syncManagedSlots(db);
+    if (updated) {
+      writeDb(db);
+    }
     const serviceId = Number(url.searchParams.get('serviceId'));
     const slotTime = String(url.searchParams.get('slotTime') || '').trim();
 
@@ -555,7 +745,7 @@ async function handleRequest(req, res) {
     }
 
     const alreadyBooked = db.bookings.some((item) => item.slotId === slot.id);
-    const isAvailable = Boolean(slot.available) && !alreadyBooked;
+    const isAvailable = Boolean(slot.available) && !alreadyBooked && isSlotInRollingWindow(slot.start);
     return sendJson(res, 200, {
       found: true,
       available: isAvailable,
@@ -712,6 +902,10 @@ async function handleRequest(req, res) {
       }
 
       const db = readDb();
+      const updated = syncManagedSlots(db);
+      if (updated) {
+        writeDb(db);
+      }
       const studentId = Number(payload.studentId);
       const serviceId = Number(payload.serviceId);
       const slotId = Number(payload.slotId);
@@ -774,9 +968,14 @@ async function handleRequest(req, res) {
         return sendJson(res, 404, { error: 'Lesson type not found' });
       }
 
-      const slot = db.slots.find((item) => item.id === slotId && item.serviceId === serviceId);
+      const slot = db.slots.find(
+        (item) => item.id === slotId && item.serviceId === serviceId && item.managed === true
+      );
       if (!slot) {
         return sendJson(res, 404, { error: 'Slot not found for this lesson type' });
+      }
+      if (!isSlotInRollingWindow(slot.start)) {
+        return sendJson(res, 409, { error: 'Slot is outside the 30-day booking window' });
       }
 
       if (db.bookings.some((item) => item.slotId === slotId)) {

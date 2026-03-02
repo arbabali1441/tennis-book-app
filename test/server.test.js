@@ -93,6 +93,11 @@ test('public booking flow creates booking and consumes slot', async () => {
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {
     const handler = loadHandlerWithDb(tempDbPath);
+    const initialSlotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
+    assert.equal(initialSlotsResponse.statusCode, 200);
+    assert.equal(Array.isArray(initialSlotsResponse.json), true);
+    assert.equal(initialSlotsResponse.json.length > 0, true);
+    const slot = initialSlotsResponse.json[0];
 
     const createResponse = await invoke(handler, {
       method: 'POST',
@@ -101,7 +106,7 @@ test('public booking flow creates booking and consumes slot', async () => {
       body: {
         studentId: 1,
         serviceId: 1,
-        slotId: 5,
+        slotId: slot.id,
         notes: 'integration-test'
       }
     });
@@ -113,7 +118,7 @@ test('public booking flow creates booking and consumes slot', async () => {
 
     const slotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
     assert.equal(slotsResponse.statusCode, 200);
-    assert.equal(slotsResponse.json.some((item) => item.id === 5), false);
+    assert.equal(slotsResponse.json.some((item) => item.id === slot.id), false);
 
     const duplicateResponse = await invoke(handler, {
       method: 'POST',
@@ -122,7 +127,7 @@ test('public booking flow creates booking and consumes slot', async () => {
       body: {
         studentId: 1,
         serviceId: 1,
-        slotId: 5
+        slotId: slot.id
       }
     });
 
@@ -139,6 +144,10 @@ test('new client can book with contact number and is auto-created as student', a
     const handler = loadHandlerWithDb(tempDbPath);
     const dbBefore = JSON.parse(fs.readFileSync(tempDbPath, 'utf8'));
     const studentCountBefore = dbBefore.students.length;
+    const initialSlotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
+    assert.equal(initialSlotsResponse.statusCode, 200);
+    assert.equal(initialSlotsResponse.json.length > 0, true);
+    const slot = initialSlotsResponse.json[0];
 
     const createResponse = await invoke(handler, {
       method: 'POST',
@@ -149,7 +158,7 @@ test('new client can book with contact number and is auto-created as student', a
         contactNo: '+971500000001',
         ageGroup: 'adults',
         serviceId: 1,
-        slotId: 5
+        slotId: slot.id
       }
     });
 
@@ -193,28 +202,45 @@ test('public slot checker validates typed time availability', async () => {
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {
     const handler = loadHandlerWithDb(tempDbPath);
+    const initialSlotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
+    assert.equal(initialSlotsResponse.statusCode, 200);
+    assert.equal(initialSlotsResponse.json.length > 0, true);
+    const slot = initialSlotsResponse.json[0];
 
     const availableResponse = await invoke(handler, {
       method: 'GET',
-      url: '/api/slots/check?serviceId=1&slotTime=2026-03-04T10:07:00.000Z'
+      url: `/api/slots/check?serviceId=1&slotTime=${encodeURIComponent(slot.start)}`
     });
     assert.equal(availableResponse.statusCode, 200);
     assert.equal(availableResponse.json.found, true);
     assert.equal(availableResponse.json.available, true);
-    assert.equal(availableResponse.json.slot.id, 5);
+
+    const createResponse = await invoke(handler, {
+      method: 'POST',
+      url: '/api/bookings',
+      headers: { 'content-type': 'application/json' },
+      body: {
+        studentId: 1,
+        serviceId: 1,
+        slotId: slot.id
+      }
+    });
+    assert.equal(createResponse.statusCode, 201);
 
     const bookedResponse = await invoke(handler, {
       method: 'GET',
-      url: '/api/slots/check?serviceId=1&slotTime=2026-03-03T15:00:00.000Z'
+      url: `/api/slots/check?serviceId=1&slotTime=${encodeURIComponent(slot.start)}`
     });
     assert.equal(bookedResponse.statusCode, 200);
     assert.equal(bookedResponse.json.found, true);
     assert.equal(bookedResponse.json.available, false);
-    assert.equal(bookedResponse.json.slot.id, 1);
+    assert.equal(bookedResponse.json.slot.id, slot.id);
+
+    const missingTime = new Date(Date.parse(slot.start) + 30 * 60 * 1000).toISOString();
 
     const missingResponse = await invoke(handler, {
       method: 'GET',
-      url: '/api/slots/check?serviceId=1&slotTime=2026-03-07T10:07:00.000Z'
+      url: `/api/slots/check?serviceId=1&slotTime=${encodeURIComponent(missingTime)}`
     });
     assert.equal(missingResponse.statusCode, 200);
     assert.equal(missingResponse.json.found, false);
@@ -408,6 +434,10 @@ test('admin can cancel a booking and the slot becomes available again', async ()
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {
     const handler = loadHandlerWithDb(tempDbPath);
+    const initialSlotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
+    assert.equal(initialSlotsResponse.statusCode, 200);
+    assert.equal(initialSlotsResponse.json.length > 0, true);
+    const slot = initialSlotsResponse.json[0];
 
     const createResponse = await invoke(handler, {
       method: 'POST',
@@ -416,7 +446,7 @@ test('admin can cancel a booking and the slot becomes available again', async ()
       body: {
         studentId: 1,
         serviceId: 1,
-        slotId: 5
+        slotId: slot.id
       }
     });
     assert.equal(createResponse.statusCode, 201);
@@ -440,7 +470,7 @@ test('admin can cancel a booking and the slot becomes available again', async ()
 
     const slotsResponse = await invoke(handler, { method: 'GET', url: '/api/slots?serviceId=1' });
     assert.equal(slotsResponse.statusCode, 200);
-    assert.equal(slotsResponse.json.some((item) => item.id === 5), true);
+    assert.equal(slotsResponse.json.some((item) => item.id === slot.id), true);
 
     const rebookResponse = await invoke(handler, {
       method: 'POST',
@@ -449,7 +479,7 @@ test('admin can cancel a booking and the slot becomes available again', async ()
       body: {
         studentId: 1,
         serviceId: 1,
-        slotId: 5
+        slotId: slot.id
       }
     });
     assert.equal(rebookResponse.statusCode, 201);
