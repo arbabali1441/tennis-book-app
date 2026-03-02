@@ -274,6 +274,46 @@ form button[type="submit"]:hover {
   font-size: 0.92rem;
 }
 
+.booking-bar-chart {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.bar-chart-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.bar-chart-track {
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 999px;
+  background: #f8fafc;
+  overflow: hidden;
+  min-height: 24px;
+}
+
+.bar-chart-fill {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #0f766e 0%, #0369a1 100%);
+  transition: width 180ms ease-in-out;
+}
+
 .booking-chart-grid {
   display: grid;
   gap: 10px;

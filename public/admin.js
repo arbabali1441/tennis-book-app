@@ -19,13 +19,16 @@ const monthlySaleValue = document.getElementById('monthly-sale-value');
 const logoutBtn = document.getElementById('logout-btn');
 const weekdaysChartBtn = document.getElementById('weekdays-chart-btn');
 const fullWeekChartBtn = document.getElementById('full-week-chart-btn');
+const allClientsChartBtn = document.getElementById('all-clients-chart-btn');
 const financeBtn = document.getElementById('finance-btn');
 const bookingChartCaption = document.getElementById('booking-chart-caption');
+const bookingBarChart = document.getElementById('booking-bar-chart');
 const bookingChartGrid = document.getElementById('booking-chart-grid');
 const financeSection = document.getElementById('finance-section');
 
 const WEEKDAYS_ONLY = 'weekdays';
 const FULL_WEEK = 'full-week';
+const ALL_CLIENTS = 'all-clients';
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 let chartMode = WEEKDAYS_ONLY;
@@ -75,9 +78,9 @@ function getChartDays(mode) {
     { index: 5, startHour: 17, endHour: 22 }
   ];
 
-  if (mode === FULL_WEEK) {
-    dayRules.push({ index: 6, startHour: 18, endHour: 22 });
-    dayRules.push({ index: 0, startHour: 18, endHour: 22 });
+  if (mode === FULL_WEEK || mode === ALL_CLIENTS) {
+    dayRules.push({ index: 6, startHour: 6, endHour: 22 });
+    dayRules.push({ index: 0, startHour: 6, endHour: 22 });
   }
 
   return dayRules.map((rule) => {
@@ -101,10 +104,12 @@ function setChartMode(nextMode) {
   chartMode = nextMode;
   weekdaysChartBtn.className = getChartButtonClass(chartMode === WEEKDAYS_ONLY);
   fullWeekChartBtn.className = getChartButtonClass(chartMode === FULL_WEEK);
+  allClientsChartBtn.className = getChartButtonClass(chartMode === ALL_CLIENTS);
+  financeBtn.className = getChartButtonClass(false);
   renderBookingChart();
 }
 
-function createBookingMap(bookings) {
+function createBookingMap(bookings, mode) {
   const map = new Map();
   for (const booking of bookings) {
     if (!booking.slotStart) {
@@ -114,7 +119,8 @@ function createBookingMap(bookings) {
     if (Number.isNaN(start.getTime())) {
       continue;
     }
-    const key = `${toDateKey(start)}-${start.getHours()}`;
+    const key =
+      mode === ALL_CLIENTS ? `${start.getDay()}-${start.getHours()}` : `${toDateKey(start)}-${start.getHours()}`;
     if (!map.has(key)) {
       map.set(key, []);
     }
@@ -123,28 +129,89 @@ function createBookingMap(bookings) {
   return map;
 }
 
-function renderBookingChart() {
-  const chartDays = getChartDays(chartMode);
+function renderDailyBarChart(bookings, chartDays, mode) {
+  const countsByDay = new Map();
+  for (const day of chartDays) {
+    const key = mode === ALL_CLIENTS ? String(day.index) : day.dateKey;
+    countsByDay.set(key, 0);
+  }
+
+  for (const booking of bookings) {
+    if (!booking.slotStart) {
+      continue;
+    }
+    const start = new Date(booking.slotStart);
+    if (Number.isNaN(start.getTime())) {
+      continue;
+    }
+    const dayKey = mode === ALL_CLIENTS ? String(start.getDay()) : toDateKey(start);
+    if (!countsByDay.has(dayKey)) {
+      continue;
+    }
+    countsByDay.set(dayKey, countsByDay.get(dayKey) + 1);
+  }
+
+  const maxCount = Math.max(...countsByDay.values(), 1);
+  bookingBarChart.innerHTML = '';
+
+  for (const day of chartDays) {
+    const key = mode === ALL_CLIENTS ? String(day.index) : day.dateKey;
+    const count = countsByDay.get(key) || 0;
+    const widthPercent = Math.max((count / maxCount) * 100, count > 0 ? 12 : 0);
+
+    const row = document.createElement('div');
+    row.className = 'bar-chart-row';
+
+    const label = document.createElement('p');
+    label.className = 'bar-chart-label';
+    label.textContent =
+      mode === ALL_CLIENTS ? `${day.dayName} (all)` : `${day.dayName} ${day.date.getMonth() + 1}/${day.date.getDate()}`;
+    row.appendChild(label);
+
+    const track = document.createElement('div');
+    track.className = 'bar-chart-track';
+
+    const fill = document.createElement('div');
+    fill.className = 'bar-chart-fill';
+    fill.style.width = `${widthPercent}%`;
+    fill.textContent = `${count} booking${count === 1 ? '' : 's'}`;
+    track.appendChild(fill);
+
+    row.appendChild(track);
+    bookingBarChart.appendChild(row);
+  }
+}
+
+function getWeekBookings() {
   const monday = getCurrentMonday();
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  const weekBookings = bookingsCache.filter((booking) => {
+  return bookingsCache.filter((booking) => {
     if (!booking.slotStart) {
       return false;
     }
     const slotStart = new Date(booking.slotStart);
     return slotStart >= monday && slotStart <= sunday;
   });
+}
 
-  const bookingMap = createBookingMap(weekBookings);
+function renderBookingChart() {
+  const chartDays = getChartDays(chartMode);
+  const chartBookings = chartMode === ALL_CLIENTS ? bookingsCache : getWeekBookings();
+  const bookingMap = createBookingMap(chartBookings, chartMode);
   bookingChartGrid.innerHTML = '';
 
-  bookingChartCaption.textContent =
-    chartMode === FULL_WEEK
-      ? 'Full week chart: Monday-Friday 5:00 PM to 10:00 PM, Saturday-Sunday 6:00 PM to 10:00 PM'
-      : 'Weekdays chart: Monday-Friday 5:00 PM to 10:00 PM';
+  if (chartMode === FULL_WEEK) {
+    bookingChartCaption.textContent = 'Full week chart: Monday-Friday 5:00 PM to 10:00 PM, Saturday-Sunday 6:00 AM to 10:00 PM';
+  } else if (chartMode === ALL_CLIENTS) {
+    bookingChartCaption.textContent =
+      'All clients chart: all-time bookings grouped by day and hour. Monday-Friday 5:00 PM to 10:00 PM, Saturday-Sunday 6:00 AM to 10:00 PM';
+  } else {
+    bookingChartCaption.textContent = 'Weekdays chart: Monday-Friday 5:00 PM to 10:00 PM';
+  }
+  renderDailyBarChart(chartBookings, chartDays, chartMode);
 
   for (const day of chartDays) {
     const dayColumn = document.createElement('article');
@@ -152,7 +219,7 @@ function renderBookingChart() {
 
     const dayHeader = document.createElement('h3');
     dayHeader.className = 'chart-day-title';
-    dayHeader.textContent = `${day.dayName} ${day.date.toLocaleDateString()}`;
+    dayHeader.textContent = chartMode === ALL_CLIENTS ? day.dayName : `${day.dayName} ${day.date.toLocaleDateString()}`;
     dayColumn.appendChild(dayHeader);
 
     for (let hour = day.startHour; hour < day.endHour; hour += 1) {
@@ -167,7 +234,7 @@ function renderBookingChart() {
       const bookingsCell = document.createElement('div');
       bookingsCell.className = 'chart-slot-bookings';
 
-      const key = `${day.dateKey}-${hour}`;
+      const key = chartMode === ALL_CLIENTS ? `${day.index}-${hour}` : `${day.dateKey}-${hour}`;
       const slotBookings = bookingMap.get(key) || [];
 
       if (slotBookings.length === 0) {
@@ -179,7 +246,10 @@ function renderBookingChart() {
         for (const booking of slotBookings) {
           const item = document.createElement('p');
           item.className = 'chart-booking-item';
-          item.textContent = `${booking.studentName} - ${booking.serviceName}`;
+          item.textContent =
+            chartMode === ALL_CLIENTS
+              ? `${booking.studentName} - ${booking.serviceName} (${new Date(booking.slotStart).toLocaleDateString()})`
+              : `${booking.studentName} - ${booking.serviceName}`;
           bookingsCell.appendChild(item);
         }
       }
@@ -194,6 +264,7 @@ function renderBookingChart() {
 
 async function openFinanceSection() {
   financeBtn.disabled = true;
+  financeBtn.className = getChartButtonClass(true);
   try {
     await fetchPayments();
     await fetchPaymentsSummary();
@@ -630,6 +701,10 @@ weekdaysChartBtn.addEventListener('click', () => {
 
 fullWeekChartBtn.addEventListener('click', () => {
   setChartMode(FULL_WEEK);
+});
+
+allClientsChartBtn.addEventListener('click', () => {
+  setChartMode(ALL_CLIENTS);
 });
 
 financeBtn.addEventListener('click', async () => {
