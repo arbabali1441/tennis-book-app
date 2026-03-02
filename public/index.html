@@ -27,10 +27,8 @@
       <h2>Book a Lesson</h2>
       <form id="booking-form">
         <label>
-          Student
-          <select name="studentId" id="student-select" required>
-            <option value="">Select student</option>
-          </select>
+          Student Email
+          <input type="email" name="studentEmail" id="student-email" placeholder="you@example.com" required />
         </label>
 
         <label>
@@ -55,11 +53,6 @@
         <button type="submit">Confirm Lesson</button>
       </form>
       <p id="form-message" class="message"></p>
-    </section>
-
-    <section class="card">
-      <h2>Student Lesson Balance</h2>
-      <div id="student-summary" class="summary-box">Select a student to view lesson and payment totals.</div>
     </section>
   </main>
   <footer class="site-footer">Copyright © 2026 Tennis Book App. Eng AA Tech.</footer>

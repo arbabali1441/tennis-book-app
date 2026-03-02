@@ -235,6 +235,39 @@ form button[type="submit"]:hover {
 .list li {
   margin-bottom: 8px;
   color: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.list-action {
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  background: #ffffff;
+}
+
+.danger-btn {
+  color: #991b1b;
+  border-color: rgba(153, 27, 27, 0.4);
+}
+
+.danger-btn:hover {
+  background: #fee2e2;
+}
+
+.slot-locked {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid rgba(146, 64, 14, 0.3);
+  border-radius: 999px;
+  padding: 4px 10px;
 }
 
 .site-footer {

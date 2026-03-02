@@ -1,8 +1,15 @@
 let deferredPrompt = null;
+const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
+      if (!isLocalHost) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        return;
+      }
+
       await navigator.serviceWorker.register('/sw.js');
     } catch (err) {
       console.error('Service worker registration failed:', err);

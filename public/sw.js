@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tennis-book-app-v1';
+const CACHE_NAME = 'tennis-book-app-v2';
 const APP_SHELL = [
   '/',
   '/styles.css',
@@ -7,9 +7,7 @@ const APP_SHELL = [
   '/login.js',
   '/pwa.js',
   '/manifest.webmanifest',
-  '/icons/icon.svg',
-  '/login',
-  '/admin'
+  '/icons/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -51,6 +49,10 @@ self.addEventListener('fetch', (event) => {
     caches.match(request).then((cached) => {
       if (cached) {
         return cached;
+      }
+      const destination = request.destination || '';
+      if (destination === 'document') {
+        return fetch(request).catch(() => caches.match('/'));
       }
       return fetch(request)
         .then((response) => {

@@ -17,6 +17,7 @@ A lightweight tennis lesson booking app for student management, lesson packages,
 
 ```bash
 cd /home/arbab/booking-app
+cp .env.example .env
 npm start
 ```
 
@@ -29,11 +30,32 @@ Default admin password:
 
 - `admin1234`
 
-Set your own password:
+Set your own password in `.env`:
 
 ```bash
-ADMIN_PASSWORD='your-secure-password' npm start
+ADMIN_PASSWORD=your-secure-password
 ```
+
+## Reset admin password (current setup)
+
+This app uses one environment variable (`ADMIN_PASSWORD`) for admin login.
+If you forget the password, reset it by changing the env var and restarting the app.
+
+Local reset:
+
+```bash
+cd /home/arbab/booking-app
+# edit .env and update:
+# ADMIN_PASSWORD=new-secure-password
+npm start
+```
+
+Render reset:
+
+1. Open Render dashboard for your service.
+2. Go to `Environment`.
+3. Update `ADMIN_PASSWORD`.
+4. Redeploy or restart the service.
 
 Enable WhatsApp reminders to your number (Twilio):
 

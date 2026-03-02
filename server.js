@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { URL } = require('url');
+require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
@@ -13,7 +14,7 @@ const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
 const TWILIO_WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM || '';
 const ADMIN_WHATSAPP_TO = process.env.ADMIN_WHATSAPP_TO || '';
-const DATA_FILE = path.join(__dirname, 'data', 'db.json');
+const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const sessions = new Map();
 let reminderLoopBusy = false;
@@ -108,7 +109,11 @@ function parseCookies(req) {
     if (!key || rest.length === 0) {
       continue;
     }
-    parsed[key] = decodeURIComponent(rest.join('='));
+    try {
+      parsed[key] = decodeURIComponent(rest.join('='));
+    } catch {
+      parsed[key] = rest.join('=');
+    }
   }
 
   return parsed;
@@ -184,8 +189,13 @@ function calculateStudentSummary(db, studentId) {
 }
 
 function validateBooking(payload) {
-  const required = ['studentId', 'serviceId', 'slotId'];
+  const required = ['serviceId', 'slotId'];
   const missing = required.filter((field) => !payload[field]);
+  const hasStudentId = Boolean(payload.studentId);
+  const hasStudentEmail = Boolean(payload.studentEmail);
+  if (!hasStudentId && !hasStudentEmail) {
+    missing.push('studentId or studentEmail');
+  }
   if (missing.length > 0) {
     return `Missing fields: ${missing.join(', ')}`;
   }
@@ -322,7 +332,7 @@ async function processDueReminders() {
   }
 }
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (req.method === 'GET' && url.pathname === '/healthz') {
@@ -381,6 +391,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/students') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
     const db = readDb();
     return sendJson(res, 200, db.students);
   }
@@ -425,6 +439,30 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, detailedBookings);
   }
 
+  const deleteBookingMatch = req.method === 'DELETE' ? url.pathname.match(/^\/api\/bookings\/(\d+)$/) : null;
+  if (deleteBookingMatch) {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const bookingId = Number(deleteBookingMatch[1]);
+    const bookingIndex = db.bookings.findIndex((item) => item.id === bookingId);
+    if (bookingIndex === -1) {
+      return sendJson(res, 404, { error: 'Booking not found' });
+    }
+
+    const booking = db.bookings[bookingIndex];
+    const slot = db.slots.find((item) => item.id === booking.slotId);
+    if (slot) {
+      slot.available = true;
+    }
+
+    db.bookings.splice(bookingIndex, 1);
+    writeDb(db);
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/payments') {
     if (!requireAdmin(req, res)) {
       return;
@@ -458,6 +496,10 @@ const server = http.createServer(async (req, res) => {
 
   const summaryMatch = req.method === 'GET' ? url.pathname.match(/^\/api\/students\/(\d+)\/summary$/) : null;
   if (summaryMatch) {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
     const db = readDb();
     const studentId = Number(summaryMatch[1]);
     const student = db.students.find((item) => item.id === studentId);
@@ -483,10 +525,19 @@ const server = http.createServer(async (req, res) => {
       const studentId = Number(payload.studentId);
       const serviceId = Number(payload.serviceId);
       const slotId = Number(payload.slotId);
+      const studentEmail = String(payload.studentEmail || '')
+        .trim()
+        .toLowerCase();
 
-      const student = db.students.find((item) => item.id === studentId);
+      let student = null;
+      if (!Number.isNaN(studentId) && studentId > 0) {
+        student = db.students.find((item) => item.id === studentId);
+      } else if (studentEmail) {
+        student = db.students.find((item) => item.email === studentEmail);
+      }
+
       if (!student) {
-        return sendJson(res, 404, { error: 'Student not found' });
+        return sendJson(res, 404, { error: 'Student account not found. Please contact admin.' });
       }
 
       const service = db.services.find((item) => item.id === serviceId);
@@ -497,6 +548,10 @@ const server = http.createServer(async (req, res) => {
       const slot = db.slots.find((item) => item.id === slotId && item.serviceId === serviceId);
       if (!slot) {
         return sendJson(res, 404, { error: 'Slot not found for this lesson type' });
+      }
+
+      if (db.bookings.some((item) => item.slotId === slotId)) {
+        return sendJson(res, 409, { error: 'Slot already booked' });
       }
 
       if (!slot.available) {
@@ -591,6 +646,32 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const deleteStudentMatch = req.method === 'DELETE' ? url.pathname.match(/^\/api\/students\/(\d+)$/) : null;
+  if (deleteStudentMatch) {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const studentId = Number(deleteStudentMatch[1]);
+    const studentIndex = db.students.findIndex((item) => item.id === studentId);
+    if (studentIndex === -1) {
+      return sendJson(res, 404, { error: 'Student not found' });
+    }
+
+    const hasBookings = db.bookings.some((item) => item.studentId === studentId);
+    const hasPayments = db.payments.some((item) => item.studentId === studentId);
+    if (hasBookings || hasPayments) {
+      return sendJson(res, 409, {
+        error: 'Cannot delete student with existing bookings or payments'
+      });
+    }
+
+    db.students.splice(studentIndex, 1);
+    writeDb(db);
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/payments') {
     if (!requireAdmin(req, res)) {
       return;
@@ -679,6 +760,29 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const deleteSlotMatch = req.method === 'DELETE' ? url.pathname.match(/^\/api\/slots\/(\d+)$/) : null;
+  if (deleteSlotMatch) {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    const slotId = Number(deleteSlotMatch[1]);
+    const slotIndex = db.slots.findIndex((item) => item.id === slotId);
+    if (slotIndex === -1) {
+      return sendJson(res, 404, { error: 'Slot not found' });
+    }
+
+    const hasBooking = db.bookings.some((item) => item.slotId === slotId);
+    if (hasBooking || !db.slots[slotIndex].available) {
+      return sendJson(res, 409, { error: 'Cannot delete booked slot' });
+    }
+
+    db.slots.splice(slotIndex, 1);
+    writeDb(db);
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
     return sendFile(res, path.join(PUBLIC_DIR, 'index.html'));
   }
@@ -706,18 +810,51 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
-});
+}
 
-setInterval(processDueReminders, 60 * 1000);
-processDueReminders().catch((err) => {
-  console.error('Reminder loop startup error:', err.message);
-});
+function createServer() {
+  return http.createServer((req, res) => {
+    Promise.resolve(handleRequest(req, res)).catch((err) => {
+      console.error('Unhandled request error:', err);
+      if (!res.headersSent) {
+        sendJson(res, 500, { error: 'Internal server error' });
+        return;
+      }
+      res.end();
+    });
+  });
+}
 
-server.listen(PORT, () => {
-  console.log(`Tennis booking app running on http://localhost:${PORT}`);
-  if (isWhatsAppEnabled()) {
-    console.log('WhatsApp reminders are enabled.');
-  } else {
-    console.log('WhatsApp reminders are disabled. Configure Twilio env vars to enable.');
-  }
-});
+function startServer(port = PORT) {
+  const server = createServer();
+  const reminderInterval = setInterval(processDueReminders, 60 * 1000);
+
+  processDueReminders().catch((err) => {
+    console.error('Reminder loop startup error:', err.message);
+  });
+
+  server.on('close', () => {
+    clearInterval(reminderInterval);
+  });
+
+  server.listen(port, () => {
+    console.log(`Tennis booking app running on http://localhost:${port}`);
+    if (isWhatsAppEnabled()) {
+      console.log('WhatsApp reminders are enabled.');
+    } else {
+      console.log('WhatsApp reminders are disabled. Configure Twilio env vars to enable.');
+    }
+  });
+
+  return server;
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = {
+  handleRequest,
+  createServer,
+  startServer
+};

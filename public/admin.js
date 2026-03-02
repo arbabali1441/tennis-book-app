@@ -80,11 +80,21 @@ async function fetchStudentSummaries() {
 
   for (const student of summaries) {
     const li = document.createElement('li');
-    li.textContent = `${student.name} (${student.ageGroup}) ${student.contactNo ? '| Contact: ' + student.contactNo : ''} | Paid: AED ${student.totalPaid.toFixed(
+    const text = document.createElement('span');
+    text.textContent = `${student.name} (${student.ageGroup}) ${student.contactNo ? '| Contact: ' + student.contactNo : ''} | Paid: AED ${student.totalPaid.toFixed(
       2
     )} | Purchased: ${student.totalLessonsPurchased} | Booked: ${student.totalLessonsBooked} | Remaining: ${
       student.lessonsRemaining
     }`;
+    li.appendChild(text);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'list-action danger-btn';
+    deleteBtn.dataset.action = 'delete-student';
+    deleteBtn.dataset.studentId = String(student.id);
+    deleteBtn.textContent = 'Delete';
+    li.appendChild(deleteBtn);
     studentTotalsList.appendChild(li);
   }
 }
@@ -108,9 +118,19 @@ async function fetchBookings() {
 
   for (const booking of bookings.slice().reverse()) {
     const li = document.createElement('li');
-    li.textContent = `${booking.studentName} (${booking.studentAgeGroup}) ${booking.studentContactNo ? '- ' + booking.studentContactNo : ''} booked ${booking.serviceName} at ${formatDate(
+    const text = document.createElement('span');
+    text.textContent = `${booking.studentName} (${booking.studentAgeGroup}) ${booking.studentContactNo ? '- ' + booking.studentContactNo : ''} booked ${booking.serviceName} at ${formatDate(
       booking.slotStart
     )}`;
+    li.appendChild(text);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'list-action danger-btn';
+    cancelBtn.dataset.action = 'cancel-booking';
+    cancelBtn.dataset.bookingId = String(booking.id);
+    cancelBtn.textContent = 'Cancel';
+    li.appendChild(cancelBtn);
     bookingsList.appendChild(li);
   }
 }
@@ -160,12 +180,147 @@ async function fetchSlots() {
 
   for (const slot of slots) {
     const li = document.createElement('li');
-    li.textContent = `Service #${slot.serviceId} | ${formatDate(slot.start)} - ${formatDate(slot.end)} | ${
+    const text = document.createElement('span');
+    text.textContent = `Service #${slot.serviceId} | ${formatDate(slot.start)} - ${formatDate(slot.end)} | ${
       slot.available ? 'available' : 'booked'
     }`;
+    li.appendChild(text);
+
+    if (slot.available) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'list-action danger-btn';
+      deleteBtn.dataset.action = 'delete-slot';
+      deleteBtn.dataset.slotId = String(slot.id);
+      deleteBtn.textContent = 'Delete';
+      li.appendChild(deleteBtn);
+    } else {
+      const locked = document.createElement('span');
+      locked.className = 'slot-locked';
+      locked.textContent = 'Locked';
+      li.appendChild(locked);
+    }
+
     slotsList.appendChild(li);
   }
 }
+
+studentTotalsList.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (target.dataset.action !== 'delete-student') {
+    return;
+  }
+
+  const studentId = target.dataset.studentId;
+  if (!studentId) {
+    return;
+  }
+
+  if (!window.confirm('Delete this student? Students with bookings/payments cannot be deleted.')) {
+    return;
+  }
+
+  studentMessage.textContent = 'Deleting student...';
+  const response = await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    studentMessage.textContent = data.error || 'Failed to delete student';
+    studentMessage.style.color = '#b91c1c';
+    return;
+  }
+
+  studentMessage.textContent = 'Student deleted';
+  studentMessage.style.color = '#047857';
+  await fetchStudentsAndFillSelects();
+  await fetchStudentSummaries();
+});
+
+slotsList.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (target.dataset.action !== 'delete-slot') {
+    return;
+  }
+
+  const slotId = target.dataset.slotId;
+  if (!slotId) {
+    return;
+  }
+
+  if (!window.confirm('Delete this slot? Booked slots cannot be deleted.')) {
+    return;
+  }
+
+  slotMessage.textContent = 'Deleting slot...';
+  const response = await fetch(`/api/slots/${slotId}`, { method: 'DELETE' });
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    slotMessage.textContent = data.error || 'Failed to delete slot';
+    slotMessage.style.color = '#b91c1c';
+    return;
+  }
+
+  slotMessage.textContent = 'Slot deleted';
+  slotMessage.style.color = '#047857';
+  await fetchSlots();
+});
+
+bookingsList.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (target.dataset.action !== 'cancel-booking') {
+    return;
+  }
+
+  const bookingId = target.dataset.bookingId;
+  if (!bookingId) {
+    return;
+  }
+
+  if (!window.confirm('Cancel this booking? This will free up the slot again.')) {
+    return;
+  }
+
+  paymentMessage.textContent = '';
+  const response = await fetch(`/api/bookings/${bookingId}`, { method: 'DELETE' });
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      return;
+    }
+    slotMessage.textContent = data.error || 'Failed to cancel booking';
+    slotMessage.style.color = '#b91c1c';
+    return;
+  }
+
+  slotMessage.textContent = 'Booking canceled';
+  slotMessage.style.color = '#047857';
+  await fetchBookings();
+  await fetchSlots();
+  await fetchStudentSummaries();
+});
 
 studentForm.addEventListener('submit', async (event) => {
   event.preventDefault();
