@@ -227,6 +227,35 @@ form button[type="submit"]:hover {
   margin: 7px 0;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.summary-stat {
+  margin: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ffffff 0%, #eefcf4 100%);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+}
+
+.summary-label {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.summary-value {
+  margin: 8px 0 0;
+  font-size: clamp(1.02rem, 2.8vw, 1.35rem);
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .list {
   padding-left: 18px;
   margin: 0;

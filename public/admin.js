@@ -13,6 +13,9 @@ const studentTotalsList = document.getElementById('student-totals-list');
 const bookingsList = document.getElementById('admin-bookings-list');
 const paymentsList = document.getElementById('admin-payments-list');
 const slotsList = document.getElementById('admin-slots-list');
+const totalPaymentValue = document.getElementById('total-payment-value');
+const dailySaleValue = document.getElementById('daily-sale-value');
+const monthlySaleValue = document.getElementById('monthly-sale-value');
 const logoutBtn = document.getElementById('logout-btn');
 
 function formatDate(iso) {
@@ -21,6 +24,10 @@ function formatDate(iso) {
 
 function toIsoString(localDatetime) {
   return new Date(localDatetime).toISOString();
+}
+
+function formatCurrency(value) {
+  return `AED ${Number(value || 0).toFixed(2)}`;
 }
 
 async function requireAdminSession() {
@@ -159,6 +166,26 @@ async function fetchPayments() {
     )}`;
     paymentsList.appendChild(li);
   }
+}
+
+async function fetchPaymentsSummary() {
+  const response = await fetch('/api/payments/summary');
+  if (response.status === 401) {
+    window.location.href = '/login';
+    return;
+  }
+
+  if (!response.ok) {
+    totalPaymentValue.textContent = 'N/A';
+    dailySaleValue.textContent = 'N/A';
+    monthlySaleValue.textContent = 'N/A';
+    return;
+  }
+
+  const summary = await response.json();
+  totalPaymentValue.textContent = formatCurrency(summary.totalPayment);
+  dailySaleValue.textContent = formatCurrency(summary.dailySale);
+  monthlySaleValue.textContent = formatCurrency(summary.monthlySale);
 }
 
 async function fetchSlots() {
@@ -379,6 +406,7 @@ paymentForm.addEventListener('submit', async (event) => {
   paymentMessage.style.color = '#047857';
   paymentForm.reset();
   await fetchPayments();
+  await fetchPaymentsSummary();
   await fetchStudentSummaries();
 });
 
@@ -430,5 +458,6 @@ logoutBtn.addEventListener('click', async () => {
   await fetchStudentSummaries();
   await fetchBookings();
   await fetchPayments();
+  await fetchPaymentsSummary();
   await fetchSlots();
 })();

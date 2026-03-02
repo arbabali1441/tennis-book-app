@@ -188,6 +188,67 @@ function calculateStudentSummary(db, studentId) {
   };
 }
 
+function timeZoneDateKeys(dateInput) {
+  const date = new Date(dateInput);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+
+  const get = (type) => parts.find((item) => item.type === type)?.value;
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return {
+    dayKey: `${year}-${month}-${day}`,
+    monthKey: `${year}-${month}`
+  };
+}
+
+function calculatePaymentSummary(db) {
+  const nowKeys = timeZoneDateKeys(new Date().toISOString());
+  const summary = {
+    totalPayment: 0,
+    dailySale: 0,
+    monthlySale: 0
+  };
+
+  for (const payment of db.payments) {
+    const amount = Number(payment.amount || 0);
+    if (!Number.isFinite(amount)) {
+      continue;
+    }
+
+    summary.totalPayment += amount;
+    const paymentKeys = timeZoneDateKeys(payment.createdAt);
+    if (!paymentKeys || !nowKeys) {
+      continue;
+    }
+
+    if (paymentKeys.dayKey === nowKeys.dayKey) {
+      summary.dailySale += amount;
+    }
+    if (paymentKeys.monthKey === nowKeys.monthKey) {
+      summary.monthlySale += amount;
+    }
+  }
+
+  summary.totalPayment = Number(summary.totalPayment.toFixed(2));
+  summary.dailySale = Number(summary.dailySale.toFixed(2));
+  summary.monthlySale = Number(summary.monthlySale.toFixed(2));
+  return summary;
+}
+
 function validateBooking(payload) {
   const required = ['serviceId', 'slotId'];
   const missing = required.filter((field) => !payload[field]);
@@ -478,6 +539,15 @@ async function handleRequest(req, res) {
     });
 
     return sendJson(res, 200, detailedPayments);
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/payments/summary') {
+    if (!requireAdmin(req, res)) {
+      return;
+    }
+
+    const db = readDb();
+    return sendJson(res, 200, calculatePaymentSummary(db));
   }
 
   if (req.method === 'GET' && url.pathname === '/api/student-summaries') {

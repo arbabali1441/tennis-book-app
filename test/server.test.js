@@ -62,6 +62,21 @@ function invoke(handler, { method = 'GET', url = '/', headers = {}, body } = {})
   });
 }
 
+function dubaiDateKeys(dateInput) {
+  const date = new Date(dateInput);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Dubai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const get = (type) => parts.find((item) => item.type === type)?.value;
+  return {
+    dayKey: `${get('year')}-${get('month')}-${get('day')}`,
+    monthKey: `${get('year')}-${get('month')}`
+  };
+}
+
 test('health endpoint returns ok', async () => {
   const { tempDir, tempDbPath } = copyFixtureDb();
   try {
@@ -159,6 +174,62 @@ test('admin auth guards protected routes and allows access after login', async (
     });
     assert.equal(authorizedStudents.statusCode, 200);
     assert.ok(Array.isArray(authorizedStudents.json));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('payments summary returns total, daily sale, and monthly sale', async () => {
+  const { tempDir, tempDbPath } = copyFixtureDb();
+  try {
+    const now = new Date();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const db = JSON.parse(fs.readFileSync(tempDbPath, 'utf8'));
+    db.payments = [
+      { id: 1, studentId: 1, amount: 150, lessonsPurchased: 2, createdAt: now.toISOString() },
+      { id: 2, studentId: 1, amount: 200, lessonsPurchased: 3, createdAt: yesterday.toISOString() },
+      { id: 3, studentId: 2, amount: 300, lessonsPurchased: 4, createdAt: sixtyDaysAgo.toISOString() }
+    ];
+    fs.writeFileSync(tempDbPath, JSON.stringify(db, null, 2), 'utf8');
+
+    const handler = loadHandlerWithDb(tempDbPath);
+    const loginResponse = await invoke(handler, {
+      method: 'POST',
+      url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' },
+      body: { role: 'admin', password: 'admin1234' }
+    });
+    const sessionCookie = loginResponse.headers['Set-Cookie'].split(';')[0];
+
+    const summaryResponse = await invoke(handler, {
+      method: 'GET',
+      url: '/api/payments/summary',
+      headers: { cookie: sessionCookie }
+    });
+    assert.equal(summaryResponse.statusCode, 200);
+
+    const nowKeys = dubaiDateKeys(now);
+    let expectedDaily = 0;
+    let expectedMonthly = 0;
+    let expectedTotal = 0;
+    for (const payment of db.payments) {
+      expectedTotal += payment.amount;
+      const paymentKeys = dubaiDateKeys(payment.createdAt);
+      if (paymentKeys.dayKey === nowKeys.dayKey) {
+        expectedDaily += payment.amount;
+      }
+      if (paymentKeys.monthKey === nowKeys.monthKey) {
+        expectedMonthly += payment.amount;
+      }
+    }
+
+    assert.deepEqual(summaryResponse.json, {
+      totalPayment: Number(expectedTotal.toFixed(2)),
+      dailySale: Number(expectedDaily.toFixed(2)),
+      monthlySale: Number(expectedMonthly.toFixed(2))
+    });
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
